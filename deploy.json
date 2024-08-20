@@ -1,0 +1,5 @@
+{
+  "namespace": "comame-xyz",
+  "name": "note-comame-xyz",
+  "prebuild": "make"
+}

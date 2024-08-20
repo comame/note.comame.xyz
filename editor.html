@@ -1,0 +1,81 @@
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+
+<body>
+  <textarea id="markdown"></textarea>
+  <div id="output"></div>
+</body>
+
+<script type="module">
+  import "./wasm_exec.js";
+
+  const go = new Go();
+  window._go = go;
+
+  const { instance } = await WebAssembly.instantiateStreaming(
+    fetch("./goapp.wasm"),
+    go.importObject
+  );
+
+  go.run(instance);
+
+  document.getElementById("markdown").addEventListener("input", (e) => {
+    const md = e.currentTarget.value;
+    const html = go_parseMarkdown(md);
+
+    document.getElementById("output").innerHTML = html;
+  });
+
+  // initial value
+  document.getElementById("markdown").value = `👇👇👇編集してみてね👇👇👇
+
+# Heading 1
+## Heading 2
+### Heading 3
+
+Lorem **ipsum** [dolor **sit amet** consectetur](https://example.com) adipisicing elit. \`Nostrum assumenda fuga enim\` ullam impedit quibusdam necessitatibus excepturi earum? Animi placeat porro, quis veniam numquam cum provident dolore eum fugiat maxime.
+
+- list
+- list
+    - [link](https://example.com)
+    - <https://example.com>
+- list
+    - **list**
+- list
+
+\`\`\`main.go
+package main
+
+import log
+
+func main() {
+	log.Println("Hello, world!")
+}
+\`\`\`
+`;
+  document.getElementById("output").innerHTML = go_parseMarkdown(
+    document.getElementById("markdown").value
+  );
+</script>
+
+<style>
+  textarea {
+    height: 40vh;
+    width: 100%;
+  }
+
+  @media (min-width: 800px) {
+    div {
+      display: inline-block;
+      vertical-align: top;
+      width: 50%;
+    }
+
+    textarea {
+      width: 48%;
+      height: 90vh;
+    }
+  }
+</style>
