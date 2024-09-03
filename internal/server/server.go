@@ -6,13 +6,23 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
+	"strings"
 
 	"github.com/comame/note.comame.xyz/internal/md"
 	_ "github.com/go-sql-driver/mysql"
 )
 
 func Start() {
+	http.HandleFunc("GET /editor/demo", func(w http.ResponseWriter, r *http.Request) {
+		renderTemplate(w, "editor", tmplEditor{
+			IsDemo: true,
+		})
+	})
+
+	http.HandleFunc("GET /post/new", func(w http.ResponseWriter, r *http.Request) {
+		renderTemplate(w, "editor", tmplEditor{})
+	})
+
 	http.HandleFunc("GET /posts/limited/{url_key}", func(w http.ResponseWriter, r *http.Request) {
 		key := r.PathValue("url_key")
 
@@ -41,7 +51,27 @@ func Start() {
 		w.Write([]byte(out))
 	})
 
-	http.HandleFunc("GET /", http.FileServerFS(os.DirFS("./out/dist")).ServeHTTP)
+	http.Handle("GET /static/", http.StripPrefix("/static/",
+		http.FileServer(http.Dir("static")),
+	))
+	http.Handle("GET /out/dist/", http.StripPrefix("/out/dist/",
+		http.FileServer(http.Dir("out/dist")),
+	))
+
+	http.HandleFunc("GET /editor.html", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/editor/demo", http.StatusMovedPermanently)
+	})
+
+	http.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+
+		if strings.Contains(r.Header.Get("Accept"), "text/html") {
+			renderTemplate(w, "not-found", nil)
+			return
+		}
+
+		w.Write([]byte("Not found"))
+	})
 
 	http.ListenAndServe(":8080", nil)
 }

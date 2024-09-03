@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+
+    <link rel="stylesheet" href="/static/root.css">
+  </head>
+  <body>
+    <nav id="app-nav">
+      <ul>
+        <li><a href='/'>TOP</a></li>
+        {{if .IsLoggedIn}}
+        <li><a href='/post/new'>NEW</a></li>
+        {{else}}
+        <li><a href='/editor/demo'>EDITOR</a></li>
+        {{end}}
+      </ul>
+      <ul>
+        {{if .IsLoggedIn}}
+        <li><a href='/logout'>LOGOUT</a></li>
+        {{else}}
+        <li><a href='/login'>LOGIN</a></li>
+        {{end}}
+      </ul>
+    </nav>
+    <div id="body">
+      {{ .Body }}
+    </div>
+  </body>
+</html>

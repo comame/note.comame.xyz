@@ -7,23 +7,17 @@ run: build
 
 .PHONY: server
 server: static_files
-	ln -s ../../out internal/server/out
 	go build -o out/server
 
 # Assets
 
 .PHONY: static_files
-static_files: wasm index_html
+static_files: wasm
 
 .PHONY: wasm
 wasm: clean
 	cp "$$(go env GOROOT)/misc/wasm/wasm_exec.js" out/dist/wasm_exec.js
 	GOOS=js GOARCH=wasm go build -o out/dist/goapp.wasm .
-
-.PHONY: index_html
-index_html: clean
-	cp index.html out/dist/index.html
-	cp editor.html out/dist/editor.html
 
 .PHONY: clean
 clean:
