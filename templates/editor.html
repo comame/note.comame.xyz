@@ -6,9 +6,14 @@
     </ul>
   </nav>
   <div id="editor-main">
-    <textarea id="input"></textarea>
-    <div id="output" class="hide-touch">loading...</div>
+    <input id="title" placeholder="タイトル" />
+    <textarea id="input" placeholder="本文"></textarea>
   </div>
+  <div id="editor-preview" class="hide-touch">
+    <div id="output" class="post-html">loading...</div>
+  </div>
+
+  <button id="submit">SAVE</button>
 </div>
 
 <script type="module" src="/static/editor.js"></script>

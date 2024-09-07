@@ -1,0 +1,11 @@
+@import url(/static/post.css);
+
+#post {
+  .title {
+    margin: 16px;
+  }
+
+  .time {
+    margin: 16px;
+  }
+}

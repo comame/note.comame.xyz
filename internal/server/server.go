@@ -91,30 +91,28 @@ func Start() {
 
 	http.HandleFunc("GET /posts/limited/{url_key}", func(w http.ResponseWriter, r *http.Request) {
 		key := r.PathValue("url_key")
+		s := resumeSession(r, kvs)
 
 		p, err := getPost(r.Context(), key)
 		if err != nil && errors.Is(err, errNotFound) {
 			w.WriteHeader(http.StatusNotFound)
+			renderTemplate(s, w, "not-found", "Not Found", nil)
 			return
 		}
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			log.Println(err)
+			renderTemplate(nil, w, "error", "エラー", tmplError{Title: "Internal Server Error", Message: "記事の取得に失敗"})
 			return
 		}
 
 		if p.Visibility != postVisibilityLimited {
 			w.WriteHeader(http.StatusNotFound)
+			renderTemplate(s, w, "not-found", "Not Found", nil)
 			return
 		}
 
-		out := fmt.Sprintf(`
-			<h1>%s</h1>
-			<div class='post'>%s</div>
-			<style></style>
-		`, p.Title, p.HTML)
-
-		w.Write([]byte(out))
+		renderTemplate(s, w, "post", p.Title, tmpPost{Post: *p})
 	})
 
 	http.Handle("GET /static/", http.StripPrefix("/static/",
@@ -140,14 +138,14 @@ func Start() {
 }
 
 type post struct {
-	ID              uint64         `json:"-"`
+	ID              uint64         `json:"id"`
 	URLKey          string         `json:"url_key"`
-	CreatedDatetime string         `json:"created_datetime"`
-	UpdatedDatetime string         `json:"updated_datetime"`
+	CreatedDatetime string         `json:"-"`
+	UpdatedDatetime string         `json:"-"`
 	Title           string         `json:"title"`
 	Text            string         `json:"text"`
-	Visibility      postVisibility `json:"visibility"`
-	HTML            string         `json:"html"`
+	Visibility      postVisibility `json:"-"`
+	HTML            string         `json:"-"`
 }
 
 type postVisibility int

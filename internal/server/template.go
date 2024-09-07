@@ -12,6 +12,10 @@ type tmplError struct {
 	Message string
 }
 
+type tmpPost struct {
+	Post post
+}
+
 type tmplEditor struct {
 	IsDemo bool
 }
@@ -22,9 +26,24 @@ type tmplApp struct {
 	IsLoggedIn bool
 }
 
-func renderTemplate(s *session, w http.ResponseWriter, name, title string, param any) {
+func setupTemplate() *template.Template {
 	// TODO: フロントエンドが書き終わったらグローバル変数に移して、リクエストごとに回さなくてよくする
-	var t = template.Must(template.ParseGlob("templates/*.html"))
+	t := template.New("_")
+	t.Funcs(map[string]any{
+		"toYMDString": func(datetime string) string {
+			l := len("2024-09-01")
+			if len(datetime) < l {
+				return datetime
+			}
+			return datetime[:l]
+		},
+	})
+	template.Must(t.ParseGlob("templates/*.html"))
+	return t
+}
+
+func renderTemplate(s *session, w http.ResponseWriter, name, title string, param any) {
+	t := setupTemplate()
 
 	var b bytes.Buffer
 	if err := t.ExecuteTemplate(&b, name+".html", param); err != nil {

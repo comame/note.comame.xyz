@@ -14,6 +14,8 @@ const inputDiv = document.getElementById("input");
 const outputDiv = document.getElementById("output");
 const tabEditorLink = document.getElementById("tab-editor");
 const tabPreviewLink = document.getElementById("tab-preview");
+const editorMain = document.getElementById("editor-main");
+const editorPreview = document.getElementById("editor-preview");
 
 outputDiv.innerHTML = go_parseMarkdown(inputDiv.value);
 
@@ -23,12 +25,14 @@ inputDiv.addEventListener("input", (e) => {
   outputDiv.innerHTML = go_parseMarkdown(inputDiv.value);
 });
 
-tabEditorLink.addEventListener("click", () => {
-  inputDiv.classList.remove("hide-touch");
-  outputDiv.classList.add("hide-touch");
+tabEditorLink.addEventListener("click", (e) => {
+  e.preventDefault();
+  editorMain.classList.remove("hide-touch");
+  editorPreview.classList.add("hide-touch");
 });
 
-tabPreviewLink.addEventListener("click", () => {
-  inputDiv.classList.add("hide-touch");
-  outputDiv.classList.remove("hide-touch");
+tabPreviewLink.addEventListener("click", (e) => {
+  e.preventDefault();
+  editorMain.classList.add("hide-touch");
+  editorPreview.classList.remove("hide-touch");
 });

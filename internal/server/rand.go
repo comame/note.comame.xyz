@@ -2,15 +2,19 @@ package server
 
 import (
 	"crypto/rand"
-	"encoding/base64"
 )
 
 func randomString(size int) (string, error) {
+	const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
 	b := make([]byte, size)
 	if _, err := rand.Read(b); err != nil {
 		return "", err
 	}
 
-	b64 := base64.RawURLEncoding.EncodeToString(b)
-	return b64[:size], nil
+	var result string
+	for _, v := range b {
+		result += string(letters[int(v)%len(letters)])
+	}
+	return result, nil
 }
