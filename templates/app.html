@@ -3,30 +3,31 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Document</title>
+    <title>{{ .Title }}</title>
 
-    <link rel="stylesheet" href="/static/root.css">
+    <link rel="stylesheet" href="/static/root.css" />
   </head>
   <body>
     <nav id="app-nav">
+      {{if.IsLoggedIn}}
       <ul>
-        <li><a href='/'>TOP</a></li>
-        {{if .IsLoggedIn}}
-        <li><a href='/post/new'>NEW</a></li>
-        {{else}}
-        <li><a href='/editor/demo'>EDITOR</a></li>
-        {{end}}
+        <li><a href="/">TOP</a></li>
+        <li><a href="/post/new">NEW</a></li>
       </ul>
       <ul>
-        {{if .IsLoggedIn}}
-        <li><a href='/logout'>LOGOUT</a></li>
-        {{else}}
-        <li><a href='/login'>LOGIN</a></li>
-        {{end}}
+        <li><a href="/manage/posts">POSTS</a></li>
+        <li><a href="/logout">LOGOUT</a></li>
       </ul>
+      {{else}}
+      <ul>
+        <li><a href="/">TOP</a></li>
+        <li><a href="/editor/demo">EDITOR</a></li>
+      </ul>
+      <ul>
+        <li><a href="/login">LOGIN</a></li>
+      </ul>
+      {{end}}
     </nav>
-    <div id="body">
-      {{ .Body }}
-    </div>
+    <div id="body">{{ .Body }}</div>
   </body>
 </html>

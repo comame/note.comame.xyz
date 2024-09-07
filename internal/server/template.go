@@ -12,11 +12,12 @@ type tmplEditor struct {
 }
 
 type tmplApp struct {
+	Title      string
 	Body       string
 	IsLoggedIn bool
 }
 
-func renderTemplate(w http.ResponseWriter, name string, param any) {
+func renderTemplate(s *session, w http.ResponseWriter, name, title string, param any) {
 	// TODO: フロントエンドが書き終わったらグローバル変数に移して、リクエストごとに回さなくてよくする
 	var t = template.Must(template.ParseGlob("templates/*.html"))
 
@@ -28,7 +29,9 @@ func renderTemplate(w http.ResponseWriter, name string, param any) {
 	}
 
 	if err := t.ExecuteTemplate(w, "app.html", tmplApp{
-		Body: b.String(),
+		Title:      title,
+		Body:       b.String(),
+		IsLoggedIn: s.isLoggedIn(),
 	}); err != nil {
 		panic(err)
 	}

@@ -47,6 +47,7 @@ nav#app-nav {
     ul {
         display: grid;
         gap: 16px;
+        height: auto;
     }
     li {
       width: 100%;

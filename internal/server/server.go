@@ -14,13 +14,21 @@ import (
 
 func Start() {
 	http.HandleFunc("GET /editor/demo", func(w http.ResponseWriter, r *http.Request) {
-		renderTemplate(w, "editor", tmplEditor{
+		s := resumeSession(r)
+		renderTemplate(s, w, "editor", "エディタ", tmplEditor{
 			IsDemo: true,
 		})
 	})
 
 	http.HandleFunc("GET /post/new", func(w http.ResponseWriter, r *http.Request) {
-		renderTemplate(w, "editor", tmplEditor{})
+		s := resumeSession(r)
+		if !s.isLoggedIn() {
+			w.WriteHeader(http.StatusUnauthorized)
+			renderTemplate(nil, w, "unauthorized", "エラー", nil)
+			return
+		}
+
+		renderTemplate(s, w, "editor", "記事を作成", tmplEditor{})
 	})
 
 	http.HandleFunc("GET /posts/limited/{url_key}", func(w http.ResponseWriter, r *http.Request) {
@@ -51,6 +59,16 @@ func Start() {
 		w.Write([]byte(out))
 	})
 
+	http.HandleFunc("GET /login", func(w http.ResponseWriter, r *http.Request) {
+		startNewSession(w, r)
+		http.Redirect(w, r, "/", http.StatusFound)
+	})
+
+	http.HandleFunc("GET /logout", func(w http.ResponseWriter, r *http.Request) {
+		destroySession(w, r)
+		http.Redirect(w, r, "/", http.StatusFound)
+	})
+
 	http.Handle("GET /static/", http.StripPrefix("/static/",
 		http.FileServer(http.Dir("static")),
 	))
@@ -66,7 +84,8 @@ func Start() {
 		w.WriteHeader(http.StatusNotFound)
 
 		if strings.Contains(r.Header.Get("Accept"), "text/html") {
-			renderTemplate(w, "not-found", nil)
+			s := resumeSession(r)
+			renderTemplate(s, w, "not-found", "Not Found", nil)
 			return
 		}
 

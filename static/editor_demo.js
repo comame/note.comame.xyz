@@ -2,8 +2,6 @@ async function awaitWasm() {
   return new Promise((resolve) => {
     (function loop() {
       setTimeout(() => {
-        console.log("loop");
-
         if (!window.go_parseMarkdown) {
           loop();
           return;
@@ -15,8 +13,6 @@ async function awaitWasm() {
 }
 
 (async function () {
-  await awaitWasm();
-
   document.getElementById("input").value = `👇👇👇編集してみてね👇👇👇
 
 # Heading 1
@@ -43,6 +39,8 @@ func main() {
 }
 \`\`\`
 `;
+
+  await awaitWasm();
   document.getElementById("output").innerHTML = go_parseMarkdown(
     document.getElementById("input").value
   );
