@@ -7,6 +7,11 @@ import (
 	"text/template"
 )
 
+type tmplError struct {
+	Title   string
+	Message string
+}
+
 type tmplEditor struct {
 	IsDemo bool
 }

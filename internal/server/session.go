@@ -1,15 +1,19 @@
 package server
 
-import "net/http"
+import (
+	"net/http"
+)
 
 type session struct {
-	// TODO: まともな実装に置き換える
 	ok     bool
 	userID string
 }
 
-// TODO: まともな実装に置き換える
-func startNewSession(w http.ResponseWriter, r *http.Request) *session {
+func startNewSession(w http.ResponseWriter, userID string, kvs *kvs) *session {
+	if userID != "comame" {
+		return nil
+	}
+
 	k, err := randomString(64)
 	if err != nil {
 		// 乱数を生成できないのは何かがおかしいので panic してしまう
@@ -21,17 +25,24 @@ func startNewSession(w http.ResponseWriter, r *http.Request) *session {
 		Value:    k,
 		Secure:   true,
 		HttpOnly: true,
+		Path:     "/",
 	})
 
 	s := &session{
 		ok:     true,
-		userID: k,
+		userID: userID,
 	}
+
+	kvs.SetSession(k, userID)
 
 	return s
 }
 
-func destroySession(w http.ResponseWriter, r *http.Request) {
+func destroySession(w http.ResponseWriter, r *http.Request, kvs *kvs) {
+	if c, err := r.Cookie("s"); err == nil {
+		kvs.DeleteSession(c.Value)
+	}
+
 	http.SetCookie(w, &http.Cookie{
 		Name:     "s",
 		Secure:   true,
@@ -40,15 +51,20 @@ func destroySession(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func resumeSession(r *http.Request) *session {
+func resumeSession(r *http.Request, kvs *kvs) *session {
 	c, err := r.Cookie("s")
 	if err != nil {
 		return nil
 	}
 
+	u, ok := kvs.GetSession(c.Value)
+	if !ok {
+		return nil
+	}
+
 	return &session{
 		ok:     true,
-		userID: c.Value,
+		userID: u,
 	}
 }
 
@@ -56,7 +72,6 @@ func (s *session) getUserID() (string, bool) {
 	if s == nil {
 		return "", false
 	}
-	// TODO: 実装
 	if !s.ok {
 		return "", false
 	}
