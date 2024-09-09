@@ -2,12 +2,15 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/comame/note.comame.xyz/internal/md"
 	oidc "github.com/comame/note.comame.xyz/internal/odic"
@@ -77,15 +80,151 @@ func Start() {
 			return
 		}
 
-		renderTemplate(s, w, "editor", "記事を作成", tmplEditor{})
+		renderTemplate(s, w, "editor", "記事を作成", tmplEditor{
+			SubmitTarget: "/post/create",
+		})
+	})
+
+	http.HandleFunc("POST /post/create", func(w http.ResponseWriter, r *http.Request) {
+		s := resumeSession(r, kvs)
+		if !s.isLoggedIn() {
+			if !s.isLoggedIn() {
+				w.WriteHeader(http.StatusUnauthorized)
+				return
+			}
+		}
+
+		b, err := io.ReadAll(r.Body)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		var p post
+		if err := json.Unmarshal(b, &p); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		u, err := randomString(32)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		p.URLKey = u
+
+		now := time.Now().Format(time.DateTime)
+		p.CreatedDatetime = now
+		p.UpdatedDatetime = now
+
+		con, err := getConnection()
+		if err != nil {
+			log.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		if err := con.createPost(r.Context(), p); err != nil {
+			log.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		j, _ := json.Marshal(redirectResponse{Location: p.getURL()})
+		w.Write(j)
+	})
+
+	http.HandleFunc("GET /posts/private/{url_key}", func(w http.ResponseWriter, r *http.Request) {
+		s := resumeSession(r, kvs)
+		if !s.isLoggedIn() {
+			if !s.isLoggedIn() {
+				w.WriteHeader(http.StatusUnauthorized)
+				renderTemplate(nil, w, "error", "エラー", tmplError{Title: "Unauthorized", Message: "ログインが必要."})
+				return
+			}
+		}
+
+		key := r.PathValue("url_key")
+
+		p, err := getPost(r.Context(), key)
+		if err != nil && errors.Is(err, errNotFound) {
+			w.WriteHeader(http.StatusNotFound)
+			renderTemplate(s, w, "not-found", "Not Found", nil)
+			return
+		}
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			log.Println(err)
+			renderTemplate(nil, w, "error", "エラー", tmplError{Title: "Internal Server Error", Message: "記事の取得に失敗"})
+			return
+		}
+
+		if p.Visibility != postVisibilityPrivate {
+			w.WriteHeader(http.StatusNotFound)
+			renderTemplate(s, w, "not-found", "Not Found", nil)
+			return
+		}
+
+		renderTemplate(s, w, "post", p.Title, tmpPost{Post: *p})
+	})
+
+	http.HandleFunc("GET /manage/posts", func(w http.ResponseWriter, r *http.Request) {
+		s := resumeSession(r, kvs)
+		if !s.isLoggedIn() {
+			if !s.isLoggedIn() {
+				w.WriteHeader(http.StatusUnauthorized)
+				renderTemplate(nil, w, "error", "エラー", tmplError{Title: "Unauthorized", Message: "ログインが必要."})
+				return
+			}
+		}
+
+		con, err := getConnection()
+		if err != nil {
+			log.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			renderTemplate(s, w, "Internal Server Error", "エラー", nil)
+			return
+		}
+
+		p, err := con.getPosts(r.Context())
+		if err != nil {
+			log.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			renderTemplate(s, w, "Internal Server Error", "エラー", nil)
+			return
+		}
+
+		renderTemplate(s, w, "manage-posts", "記事一覧", tmplManagePosts{Posts: p})
 	})
 
 	// === 誰でもアクセス可能 ===
 
 	http.HandleFunc("GET /editor/demo", func(w http.ResponseWriter, r *http.Request) {
 		s := resumeSession(r, kvs)
+
+		f, err := os.Open("static/demo.md")
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			renderTemplate(s, w, "Internal Server Error", "エラー", nil)
+			return
+		}
+		defer f.Close()
+
+		c, err := io.ReadAll(f)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			renderTemplate(s, w, "Internal Server Error", "エラー", nil)
+			return
+		}
+
 		renderTemplate(s, w, "editor", "エディタ", tmplEditor{
 			IsDemo: true,
+			Post: post{
+				Title:      "Demo",
+				Text:       string(c),
+				Visibility: postVisibilityPublic,
+			},
 		})
 	})
 
@@ -107,6 +246,32 @@ func Start() {
 		}
 
 		if p.Visibility != postVisibilityLimited {
+			w.WriteHeader(http.StatusNotFound)
+			renderTemplate(s, w, "not-found", "Not Found", nil)
+			return
+		}
+
+		renderTemplate(s, w, "post", p.Title, tmpPost{Post: *p})
+	})
+
+	http.HandleFunc("GET /posts/public/{url_key}", func(w http.ResponseWriter, r *http.Request) {
+		key := r.PathValue("url_key")
+		s := resumeSession(r, kvs)
+
+		p, err := getPost(r.Context(), key)
+		if err != nil && errors.Is(err, errNotFound) {
+			w.WriteHeader(http.StatusNotFound)
+			renderTemplate(s, w, "not-found", "Not Found", nil)
+			return
+		}
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			log.Println(err)
+			renderTemplate(nil, w, "error", "エラー", tmplError{Title: "Internal Server Error", Message: "記事の取得に失敗"})
+			return
+		}
+
+		if p.Visibility != postVisibilityPublic {
 			w.WriteHeader(http.StatusNotFound)
 			renderTemplate(s, w, "not-found", "Not Found", nil)
 			return
@@ -144,7 +309,7 @@ type post struct {
 	UpdatedDatetime string         `json:"-"`
 	Title           string         `json:"title"`
 	Text            string         `json:"text"`
-	Visibility      postVisibility `json:"-"`
+	Visibility      postVisibility `json:"visibility"`
 	HTML            string         `json:"-"`
 }
 
@@ -158,6 +323,19 @@ const (
 	// 全体公開
 	postVisibilityPublic = 2
 )
+
+func (p *post) getURL() string {
+	switch p.Visibility {
+	case postVisibilityPublic:
+		return fmt.Sprintf("/posts/public/%s", p.URLKey)
+	case postVisibilityLimited:
+		return fmt.Sprintf("/posts/limited/%s", p.URLKey)
+	case postVisibilityPrivate:
+		return fmt.Sprintf("/posts/private/%s", p.URLKey)
+	}
+
+	panic("unknown visibility")
+}
 
 func getPost(ctx context.Context, urlKey string) (*post, error) {
 	c, err := getConnection()
@@ -181,4 +359,8 @@ func getPost(ctx context.Context, urlKey string) (*post, error) {
 	pv.HTML = md.ToHTML(pv.Text)
 
 	return pv, nil
+}
+
+type redirectResponse struct {
+	Location string `json:"location"`
 }

@@ -1,4 +1,6 @@
-<div id="editor-root">
+<link rel="stylesheet" href="/static/editor.css" />
+
+<form id="editor-root" method="POST" target="{{ html .SubmitTarget }}">
   <nav id="editor-tab">
     <ul>
       <li><a href="#" id="tab-editor">Editor</a></li>
@@ -6,19 +8,37 @@
     </ul>
   </nav>
   <div id="editor-main">
-    <input id="title" placeholder="タイトル" />
-    <textarea id="input" placeholder="本文"></textarea>
+    <input
+      id="title"
+      name="title"
+      placeholder="タイトル"
+      value="{{ html .Post.Title }}"
+      required
+    />
+    <textarea required id="input" name="input" placeholder="本文">
+{{ html .Post.Text }}</textarea
+    >
   </div>
   <div id="editor-preview" class="hide-touch">
     <div id="output" class="post-html">loading...</div>
   </div>
 
-  <button id="submit">SAVE</button>
-</div>
+  {{ if not .IsDemo }}
+  <div id="control">
+    <select name="visibility">
+      <option value="0" {{if eq .Post.Visibility 0}}selected{{end}}>
+        非公開
+      </option>
+      <option value="1" {{if eq .Post.Visibility 1}}selected{{end}}>
+        限定公開
+      </option>
+      <option value="2" {{if eq .Post.Visibility 2}}selected{{end}}>
+        公開
+      </option>
+    </select>
+    <button id="submit">SAVE</button>
+  </div>
+  {{ end }}
+</form>
 
 <script type="module" src="/static/editor.js"></script>
-<link rel="stylesheet" href="/static/editor.css" />
-
-{{if .IsDemo}}
-<script src="/static/editor_demo.js" type="module"></script>
-{{end}}

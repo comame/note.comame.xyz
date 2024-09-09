@@ -16,6 +16,7 @@ const tabEditorLink = document.getElementById("tab-editor");
 const tabPreviewLink = document.getElementById("tab-preview");
 const editorMain = document.getElementById("editor-main");
 const editorPreview = document.getElementById("editor-preview");
+const form = document.getElementById("editor-root");
 
 outputDiv.innerHTML = go_parseMarkdown(inputDiv.value);
 
@@ -35,4 +36,31 @@ tabPreviewLink.addEventListener("click", (e) => {
   e.preventDefault();
   editorMain.classList.add("hide-touch");
   editorPreview.classList.remove("hide-touch");
+});
+
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const fd = new FormData(form);
+  const json = {
+    visibility: Number.parseInt(fd.get("visibility"), 10),
+    text: fd.get("input"),
+    title: fd.get("title"),
+  };
+
+  const res = await fetch(form.target, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+    body: JSON.stringify(json),
+    redirect: "manual",
+  });
+
+  if (!res.ok) {
+    return;
+  }
+
+  const js = await res.json();
+  location.replace(js["location"]);
 });

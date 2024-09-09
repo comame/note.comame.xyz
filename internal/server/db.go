@@ -74,3 +74,79 @@ func (c *connection) findVisibility(ctx context.Context, post post) (*post, erro
 
 	return &post, nil
 }
+
+func (c *connection) createPost(ctx context.Context, post post) error {
+	t, err := c.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer t.Rollback()
+
+	r, err := c.db.Exec(`
+		INSERT INTO nt_post
+		(url_key, created_datetime, updated_datetime, title, text)
+		values
+		(?, ?, ?, ?, ?)
+		`, post.URLKey, post.CreatedDatetime, post.UpdatedDatetime, post.Title, post.Text)
+	if err != nil {
+		return err
+	}
+
+	id, err := r.LastInsertId()
+	if err != nil {
+		return err
+	}
+
+	if _, err := c.db.ExecContext(ctx, `
+		INSERT INTO nt_post_visibility
+		(post_id, visibility)
+		values
+		(?, ?)
+	`, id, post.Visibility); err != nil {
+		return err
+	}
+
+	if err := t.Commit(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *connection) getPosts(ctx context.Context) ([]post, error) {
+	rows, err := c.db.QueryContext(ctx, `
+		SELECT
+			nt_post.id,
+			nt_post.url_key,
+			nt_post.created_datetime,
+			nt_post.updated_datetime,
+			nt_post.title,
+			nt_post.text,
+			nt_post_visibility.visibility
+		FROM nt_post
+		INNER JOIN nt_post_visibility
+		ON nt_post.id = nt_post_visibility.post_id
+	`)
+	if err != nil {
+		return nil, err
+	}
+
+	var p []post
+	for rows.Next() {
+		var post post
+		if err := rows.Scan(
+			&post.ID,
+			&post.URLKey,
+			&post.CreatedDatetime,
+			&post.UpdatedDatetime,
+			&post.Title,
+			&post.Text,
+			&post.Visibility,
+		); err != nil {
+			return nil, err
+		}
+		p = append(p, post)
+	}
+
+	return p, nil
+}

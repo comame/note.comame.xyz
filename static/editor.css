@@ -81,19 +81,22 @@
     }
   }
 
-  #submit {
+  #control {
     position: fixed;
     bottom: 16px;
     right: 16px;
-    height: 32px;
-    width: 6em;
-    border-radius: 8px;
 
-    background: #063e74;
-    font-weight: bold;
-    color: white;
-    border: 0;
+    #submit {
+      height: 32px;
+      width: 6em;
+      border-radius: 8px;
 
-    cursor: pointer;
+      background: #063e74;
+      font-weight: bold;
+      color: white;
+      border: 0;
+
+      cursor: pointer;
+    }
   }
 }

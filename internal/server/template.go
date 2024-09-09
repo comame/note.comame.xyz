@@ -17,7 +17,13 @@ type tmpPost struct {
 }
 
 type tmplEditor struct {
-	IsDemo bool
+	IsDemo       bool
+	SubmitTarget string
+	Post         post
+}
+
+type tmplManagePosts struct {
+	Posts []post
 }
 
 type tmplApp struct {
@@ -36,6 +42,9 @@ func setupTemplate() *template.Template {
 				return datetime
 			}
 			return datetime[:l]
+		},
+		"postURL": func(p post) string {
+			return p.getURL()
 		},
 	})
 	template.Must(t.ParseGlob("templates/*.html"))

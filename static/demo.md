@@ -14,11 +14,6 @@ Lorem **ipsum** [dolor **sit amet** consectetur](https://example.com) adipisicin
     - **list**
 - list
 
-```main.go
-package main
-
-import log
-
-func main() {
-	log.Println("Hello, world!")
-}```
+```html
+<h3>Hello, world!</h3>
+```
