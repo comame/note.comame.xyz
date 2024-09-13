@@ -10,10 +10,10 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/comame/note.comame.xyz/internal/md"
 	oidc "github.com/comame/note.comame.xyz/internal/odic"
+
 	_ "github.com/go-sql-driver/mysql"
 )
 
@@ -114,7 +114,7 @@ func Start() {
 
 		p.URLKey = u
 
-		now := time.Now().Format(time.DateTime)
+		now := dateTimeNow()
 		p.CreatedDatetime = now
 		p.UpdatedDatetime = now
 
