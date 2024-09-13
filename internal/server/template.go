@@ -7,26 +7,36 @@ import (
 	"text/template"
 )
 
-type tmplError struct {
+type templateName string
+
+const (
+	templateNameEditor      templateName = "editor"
+	templateNameError                    = "error"
+	templateNameManagePosts              = "manage-posts"
+	templateNameNotFound                 = "not-found"
+	templateNamePost                     = "post"
+)
+
+type templateError struct {
 	Title   string
 	Message string
 }
 
-type tmpPost struct {
+type templatePost struct {
 	Post post
 }
 
-type tmplEditor struct {
+type templateEditor struct {
 	IsDemo       bool
 	SubmitTarget string
 	Post         post
 }
 
-type tmplManagePosts struct {
+type templateManagePosts struct {
 	Posts []post
 }
 
-type tmplApp struct {
+type templateApp struct {
 	Title      string
 	Body       string
 	IsLoggedIn bool
@@ -51,17 +61,17 @@ func setupTemplate() *template.Template {
 	return t
 }
 
-func renderTemplate(s *session, w http.ResponseWriter, name, title string, param any) {
+func renderTemplate(s *session, w http.ResponseWriter, name templateName, title string, param any) {
 	t := setupTemplate()
 
 	var b bytes.Buffer
-	if err := t.ExecuteTemplate(&b, name+".html", param); err != nil {
+	if err := t.ExecuteTemplate(&b, string(name)+".html", param); err != nil {
 		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	if err := t.ExecuteTemplate(w, "app.html", tmplApp{
+	if err := t.ExecuteTemplate(w, "app.html", templateApp{
 		Title:      title,
 		Body:       b.String(),
 		IsLoggedIn: s.isLoggedIn(),

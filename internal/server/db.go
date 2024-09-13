@@ -28,7 +28,7 @@ func (c *connection) Close() {
 
 func (c *connection) findPost(ctx context.Context, urlKey string) (*post, error) {
 	rows, err := c.db.QueryContext(ctx, `
-		SELECT id, url_key, created_datetime, updated_datetime, title, text
+		SELECT id, url_key, created_datetime, updated_datetime, title, text, visibility
 		FROM nt_post
 		WHERE url_key = ?
 	`, urlKey)
@@ -42,37 +42,11 @@ func (c *connection) findPost(ctx context.Context, urlKey string) (*post, error)
 	}
 
 	p := new(post)
-	if err := rows.Scan(&p.ID, &p.URLKey, &p.CreatedDatetime, &p.UpdatedDatetime, &p.Title, &p.Text); err != nil {
+	if err := rows.Scan(&p.ID, &p.URLKey, &p.CreatedDatetime, &p.UpdatedDatetime, &p.Title, &p.Text, &p.Visibility); err != nil {
 		return nil, err
 	}
 
 	return p, nil
-}
-
-func (c *connection) findVisibility(ctx context.Context, post post) (*post, error) {
-	// 別の記事の公開状態と取り違えないように、ゼロ値の場合はエラーとする
-	if post.ID == 0 {
-		return nil, errors.New("id is zero")
-	}
-
-	rows, err := c.db.QueryContext(ctx, `
-		SELECT visibility
-		FROM nt_post_visibility
-		WHERE post_id = ?
-	`, post.ID)
-	if err != nil {
-		return nil, err
-	}
-
-	if !rows.Next() {
-		return nil, errNoRows
-	}
-
-	if err := rows.Scan(&post.Visibility); err != nil {
-		return nil, err
-	}
-
-	return &post, nil
 }
 
 func (c *connection) createPost(ctx context.Context, post post) error {
@@ -82,27 +56,12 @@ func (c *connection) createPost(ctx context.Context, post post) error {
 	}
 	defer t.Rollback()
 
-	r, err := c.db.Exec(`
+	if _, err := c.db.Exec(`
 		INSERT INTO nt_post
-		(url_key, created_datetime, updated_datetime, title, text)
+		(url_key, created_datetime, updated_datetime, title, text, visibility)
 		values
-		(?, ?, ?, ?, ?)
-		`, post.URLKey, post.CreatedDatetime, post.UpdatedDatetime, post.Title, post.Text)
-	if err != nil {
-		return err
-	}
-
-	id, err := r.LastInsertId()
-	if err != nil {
-		return err
-	}
-
-	if _, err := c.db.ExecContext(ctx, `
-		INSERT INTO nt_post_visibility
-		(post_id, visibility)
-		values
-		(?, ?)
-	`, id, post.Visibility); err != nil {
+		(?, ?, ?, ?, ?, ?)
+		`, post.URLKey, post.CreatedDatetime, post.UpdatedDatetime, post.Title, post.Text, post.Visibility); err != nil {
 		return err
 	}
 
@@ -122,10 +81,8 @@ func (c *connection) getPosts(ctx context.Context) ([]post, error) {
 			nt_post.updated_datetime,
 			nt_post.title,
 			nt_post.text,
-			nt_post_visibility.visibility
+			nt_post.visibility
 		FROM nt_post
-		INNER JOIN nt_post_visibility
-		ON nt_post.id = nt_post_visibility.post_id
 	`)
 	if err != nil {
 		return nil, err

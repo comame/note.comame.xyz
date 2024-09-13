@@ -33,7 +33,7 @@ func Start() {
 		u, s, err := oidc.GenerateAuthenticationRequestUrl(oidcClientID, oidcRedirectURI, kvs)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			renderTemplate(nil, w, "error", "エラー", tmplError{Title: "Internal Server Error", Message: "ログインに失敗."})
+			renderTemplate(nil, w, templateNameError, "エラー", templateError{Title: "Internal Server Error", Message: "ログインに失敗."})
 			return
 		}
 
@@ -57,12 +57,12 @@ func Start() {
 		c, err := r.Cookie("state")
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
-			renderTemplate(nil, w, "error", "エラー", tmplError{Title: "Bad Request", Message: "ログインに失敗."})
+			renderTemplate(nil, w, templateNameError, "エラー", templateError{Title: "Bad Request", Message: "ログインに失敗."})
 			return
 		}
 		p, err := oidc.CallbackCode(c.Value, r.URL.Query(), oidcClientID, oidcClientSecret, oidcRedirectURI, kvs, oidcAud)
 		if err != nil {
-			renderTemplate(nil, w, "error", "エラー", tmplError{Title: "Bad Request", Message: "ログインに失敗."})
+			renderTemplate(nil, w, templateNameError, "エラー", templateError{Title: "Bad Request", Message: "ログインに失敗."})
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
@@ -76,11 +76,11 @@ func Start() {
 		s := resumeSession(r, kvs)
 		if !s.isLoggedIn() {
 			w.WriteHeader(http.StatusUnauthorized)
-			renderTemplate(nil, w, "error", "エラー", tmplError{Title: "Unauthorized", Message: "ログインが必要."})
+			renderTemplate(nil, w, templateNameError, "エラー", templateError{Title: "Unauthorized", Message: "ログインが必要."})
 			return
 		}
 
-		renderTemplate(s, w, "editor", "記事を作成", tmplEditor{
+		renderTemplate(s, w, templateNameEditor, "記事を作成", templateEditor{
 			SubmitTarget: "/post/create",
 		})
 	})
@@ -140,7 +140,7 @@ func Start() {
 		if !s.isLoggedIn() {
 			if !s.isLoggedIn() {
 				w.WriteHeader(http.StatusUnauthorized)
-				renderTemplate(nil, w, "error", "エラー", tmplError{Title: "Unauthorized", Message: "ログインが必要."})
+				renderTemplate(nil, w, templateNameError, "エラー", templateError{Title: "Unauthorized", Message: "ログインが必要."})
 				return
 			}
 		}
@@ -150,23 +150,23 @@ func Start() {
 		p, err := getPost(r.Context(), key)
 		if err != nil && errors.Is(err, errNotFound) {
 			w.WriteHeader(http.StatusNotFound)
-			renderTemplate(s, w, "not-found", "Not Found", nil)
+			renderTemplate(s, w, templateNameNotFound, "Not Found", nil)
 			return
 		}
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			log.Println(err)
-			renderTemplate(nil, w, "error", "エラー", tmplError{Title: "Internal Server Error", Message: "記事の取得に失敗"})
+			renderTemplate(nil, w, templateNameError, "エラー", templateError{Title: "Internal Server Error", Message: "記事の取得に失敗"})
 			return
 		}
 
 		if p.Visibility != postVisibilityPrivate {
 			w.WriteHeader(http.StatusNotFound)
-			renderTemplate(s, w, "not-found", "Not Found", nil)
+			renderTemplate(s, w, templateNameNotFound, "Not Found", nil)
 			return
 		}
 
-		renderTemplate(s, w, "post", p.Title, tmpPost{Post: *p})
+		renderTemplate(s, w, "post", p.Title, templatePost{Post: *p})
 	})
 
 	http.HandleFunc("GET /manage/posts", func(w http.ResponseWriter, r *http.Request) {
@@ -174,7 +174,7 @@ func Start() {
 		if !s.isLoggedIn() {
 			if !s.isLoggedIn() {
 				w.WriteHeader(http.StatusUnauthorized)
-				renderTemplate(nil, w, "error", "エラー", tmplError{Title: "Unauthorized", Message: "ログインが必要."})
+				renderTemplate(nil, w, templateNameError, "エラー", templateError{Title: "Unauthorized", Message: "ログインが必要."})
 				return
 			}
 		}
@@ -183,7 +183,7 @@ func Start() {
 		if err != nil {
 			log.Println(err)
 			w.WriteHeader(http.StatusInternalServerError)
-			renderTemplate(s, w, "Internal Server Error", "エラー", nil)
+			renderTemplate(s, w, templateNameError, "エラー", templateError{Title: "Internal Server Error", Message: "エラー"})
 			return
 		}
 
@@ -191,11 +191,11 @@ func Start() {
 		if err != nil {
 			log.Println(err)
 			w.WriteHeader(http.StatusInternalServerError)
-			renderTemplate(s, w, "Internal Server Error", "エラー", nil)
+			renderTemplate(s, w, templateNameError, "エラー", templateError{Title: "Internal Server Error", Message: "エラー"})
 			return
 		}
 
-		renderTemplate(s, w, "manage-posts", "記事一覧", tmplManagePosts{Posts: p})
+		renderTemplate(s, w, templateNameManagePosts, "記事一覧", templateManagePosts{Posts: p})
 	})
 
 	// === 誰でもアクセス可能 ===
@@ -206,7 +206,7 @@ func Start() {
 		f, err := os.Open("static/demo.md")
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			renderTemplate(s, w, "Internal Server Error", "エラー", nil)
+			renderTemplate(s, w, templateNameError, "エラー", templateError{Title: "Internal Server Error", Message: "エラー"})
 			return
 		}
 		defer f.Close()
@@ -214,11 +214,11 @@ func Start() {
 		c, err := io.ReadAll(f)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			renderTemplate(s, w, "Internal Server Error", "エラー", nil)
+			renderTemplate(s, w, templateNameError, "エラー", templateError{Title: "Internal Server Error", Message: "エラー"})
 			return
 		}
 
-		renderTemplate(s, w, "editor", "エディタ", tmplEditor{
+		renderTemplate(s, w, templateNameEditor, "エディタ", templateEditor{
 			IsDemo: true,
 			Post: post{
 				Title:      "Demo",
@@ -235,23 +235,23 @@ func Start() {
 		p, err := getPost(r.Context(), key)
 		if err != nil && errors.Is(err, errNotFound) {
 			w.WriteHeader(http.StatusNotFound)
-			renderTemplate(s, w, "not-found", "Not Found", nil)
+			renderTemplate(s, w, templateNameNotFound, "Not Found", nil)
 			return
 		}
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			log.Println(err)
-			renderTemplate(nil, w, "error", "エラー", tmplError{Title: "Internal Server Error", Message: "記事の取得に失敗"})
+			renderTemplate(nil, w, templateNameError, "エラー", templateError{Title: "Internal Server Error", Message: "記事の取得に失敗"})
 			return
 		}
 
 		if p.Visibility != postVisibilityLimited {
 			w.WriteHeader(http.StatusNotFound)
-			renderTemplate(s, w, "not-found", "Not Found", nil)
+			renderTemplate(s, w, templateNameNotFound, "Not Found", nil)
 			return
 		}
 
-		renderTemplate(s, w, "post", p.Title, tmpPost{Post: *p})
+		renderTemplate(s, w, "post", p.Title, templatePost{Post: *p})
 	})
 
 	http.HandleFunc("GET /posts/public/{url_key}", func(w http.ResponseWriter, r *http.Request) {
@@ -261,23 +261,23 @@ func Start() {
 		p, err := getPost(r.Context(), key)
 		if err != nil && errors.Is(err, errNotFound) {
 			w.WriteHeader(http.StatusNotFound)
-			renderTemplate(s, w, "not-found", "Not Found", nil)
+			renderTemplate(s, w, templateNameNotFound, "Not Found", nil)
 			return
 		}
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			log.Println(err)
-			renderTemplate(nil, w, "error", "エラー", tmplError{Title: "Internal Server Error", Message: "記事の取得に失敗"})
+			renderTemplate(nil, w, templateNameError, "エラー", templateError{Title: "Internal Server Error", Message: "記事の取得に失敗"})
 			return
 		}
 
 		if p.Visibility != postVisibilityPublic {
 			w.WriteHeader(http.StatusNotFound)
-			renderTemplate(s, w, "not-found", "Not Found", nil)
+			renderTemplate(s, w, templateNameNotFound, "Not Found", nil)
 			return
 		}
 
-		renderTemplate(s, w, "post", p.Title, tmpPost{Post: *p})
+		renderTemplate(s, w, templateNamePost, p.Title, templatePost{Post: *p})
 	})
 
 	http.Handle("GET /static/", http.StripPrefix("/static/",
@@ -292,7 +292,7 @@ func Start() {
 
 		if strings.Contains(r.Header.Get("Accept"), "text/html") {
 			s := resumeSession(r, kvs)
-			renderTemplate(s, w, "not-found", "Not Found", nil)
+			renderTemplate(s, w, templateNameNotFound, "Not Found", nil)
 			return
 		}
 
@@ -351,14 +351,9 @@ func getPost(ctx context.Context, urlKey string) (*post, error) {
 		return nil, err
 	}
 
-	pv, err := c.findVisibility(ctx, *p)
-	if err != nil {
-		return nil, errors.Join(err, errors.New("failed to query postVisibility"))
-	}
+	p.HTML = md.ToHTML(p.Text)
 
-	pv.HTML = md.ToHTML(pv.Text)
-
-	return pv, nil
+	return p, nil
 }
 
 type redirectResponse struct {
