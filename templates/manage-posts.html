@@ -1,5 +1,10 @@
 <ul>
   {{ range .Posts }}
-  <li><a href="{{ postURL . | html}}">{{ html .Title }}</a></li>
+  <li>
+    <div>
+      <a href="{{ postURL . | html}}">{{ html .Title }}</a>
+      <a href="{{ editURL . | html }}">EDIT</a>
+    </div>
+  </li>
   {{ end }}
 </ul>

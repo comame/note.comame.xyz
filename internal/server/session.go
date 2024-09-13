@@ -76,7 +76,7 @@ func (s *session) getUserID() (string, bool) {
 		return "", false
 	}
 
-	return "test", true
+	return s.userID, true
 }
 
 func (s *session) isLoggedIn() bool {

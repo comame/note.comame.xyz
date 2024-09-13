@@ -11,10 +11,10 @@ type templateName string
 
 const (
 	templateNameEditor      templateName = "editor"
-	templateNameError                    = "error"
-	templateNameManagePosts              = "manage-posts"
-	templateNameNotFound                 = "not-found"
-	templateNamePost                     = "post"
+	templateNameError       templateName = "error"
+	templateNameManagePosts templateName = "manage-posts"
+	templateNameNotFound    templateName = "not-found"
+	templateNamePost        templateName = "post"
 )
 
 type templateError struct {
@@ -55,6 +55,9 @@ func setupTemplate() *template.Template {
 		},
 		"postURL": func(p post) string {
 			return p.getURL()
+		},
+		"editURL": func(p post) string {
+			return p.editURL()
 		},
 	})
 	template.Must(t.ParseGlob("templates/*.html"))

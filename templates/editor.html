@@ -39,6 +39,9 @@
     <button id="submit">SAVE</button>
   </div>
   {{ end }}
+
+  <input type="hidden" name="id" value="{{ html .Post.ID }}" />
+  <input type="hidden" name="url-key" value="{{ html .Post.URLKey }}" />
 </form>
 
 <script type="module" src="/static/editor.js"></script>

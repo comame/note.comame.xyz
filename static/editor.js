@@ -45,6 +45,8 @@ form.addEventListener("submit", async (e) => {
     visibility: Number.parseInt(fd.get("visibility"), 10),
     text: fd.get("input"),
     title: fd.get("title"),
+    id: Number.parseInt(fd.get("id"), 10),
+    url_key: fd.get("url-key"),
   };
 
   const res = await fetch(form.target, {

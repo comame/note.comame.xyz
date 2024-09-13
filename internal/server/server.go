@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/comame/note.comame.xyz/internal/md"
@@ -66,6 +67,7 @@ func Start() {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
+
 		startNewSession(w, p.Sub, kvs)
 		http.Redirect(w, r, "/", http.StatusFound)
 	})
@@ -74,7 +76,7 @@ func Start() {
 
 	http.HandleFunc("GET /post/new", func(w http.ResponseWriter, r *http.Request) {
 		s := resumeSession(r, kvs)
-		if !s.isLoggedIn() {
+		if !isTrustedUserSession(s) {
 			w.WriteHeader(http.StatusUnauthorized)
 			renderTemplate(nil, w, templateNameError, "エラー", templateError{Title: "Unauthorized", Message: "ログインが必要."})
 			return
@@ -87,11 +89,9 @@ func Start() {
 
 	http.HandleFunc("POST /post/create", func(w http.ResponseWriter, r *http.Request) {
 		s := resumeSession(r, kvs)
-		if !s.isLoggedIn() {
-			if !s.isLoggedIn() {
-				w.WriteHeader(http.StatusUnauthorized)
-				return
-			}
+		if !isTrustedUserSession(s) {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
 		}
 
 		b, err := io.ReadAll(r.Body)
@@ -124,6 +124,7 @@ func Start() {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
+		defer con.Close()
 
 		if err := con.createPost(r.Context(), p); err != nil {
 			log.Println(err)
@@ -137,12 +138,10 @@ func Start() {
 
 	http.HandleFunc("GET /posts/private/{url_key}", func(w http.ResponseWriter, r *http.Request) {
 		s := resumeSession(r, kvs)
-		if !s.isLoggedIn() {
-			if !s.isLoggedIn() {
-				w.WriteHeader(http.StatusUnauthorized)
-				renderTemplate(nil, w, templateNameError, "エラー", templateError{Title: "Unauthorized", Message: "ログインが必要."})
-				return
-			}
+		if !isTrustedUserSession(s) {
+			w.WriteHeader(http.StatusUnauthorized)
+			renderTemplate(s, w, templateNameError, "エラー", templateError{Title: "Unauthorized", Message: "ログインが必要."})
+			return
 		}
 
 		key := r.PathValue("url_key")
@@ -156,7 +155,7 @@ func Start() {
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			log.Println(err)
-			renderTemplate(nil, w, templateNameError, "エラー", templateError{Title: "Internal Server Error", Message: "記事の取得に失敗"})
+			renderTemplate(s, w, templateNameError, "エラー", templateError{Title: "Internal Server Error", Message: "記事の取得に失敗"})
 			return
 		}
 
@@ -171,12 +170,10 @@ func Start() {
 
 	http.HandleFunc("GET /manage/posts", func(w http.ResponseWriter, r *http.Request) {
 		s := resumeSession(r, kvs)
-		if !s.isLoggedIn() {
-			if !s.isLoggedIn() {
-				w.WriteHeader(http.StatusUnauthorized)
-				renderTemplate(nil, w, templateNameError, "エラー", templateError{Title: "Unauthorized", Message: "ログインが必要."})
-				return
-			}
+		if !isTrustedUserSession(s) {
+			w.WriteHeader(http.StatusUnauthorized)
+			renderTemplate(s, w, templateNameError, "エラー", templateError{Title: "Unauthorized", Message: "ログインが必要."})
+			return
 		}
 
 		con, err := getConnection()
@@ -186,6 +183,7 @@ func Start() {
 			renderTemplate(s, w, templateNameError, "エラー", templateError{Title: "Internal Server Error", Message: "エラー"})
 			return
 		}
+		defer con.Close()
 
 		p, err := con.getPosts(r.Context())
 		if err != nil {
@@ -196,6 +194,91 @@ func Start() {
 		}
 
 		renderTemplate(s, w, templateNameManagePosts, "記事一覧", templateManagePosts{Posts: p})
+	})
+
+	http.HandleFunc("GET /edit/post/{post_id}", func(w http.ResponseWriter, r *http.Request) {
+		s := resumeSession(r, kvs)
+		if !isTrustedUserSession(s) {
+			w.WriteHeader(http.StatusUnauthorized)
+			renderTemplate(s, w, templateNameError, "エラー", templateError{Title: "Unauthorized", Message: "ログインが必要."})
+			return
+		}
+
+		idStr := r.PathValue("post_id")
+		id, err := strconv.ParseUint(idStr, 10, 64)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			renderTemplate(s, w, templateNameError, "エラー", templateError{Title: "Bad Request", Message: "不正なリクエスト"})
+			return
+		}
+
+		con, err := getConnection()
+		if err != nil {
+			log.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			renderTemplate(s, w, templateNameError, "エラー", templateError{Title: "Internal Server Error", Message: "エラー"})
+			return
+		}
+		defer con.Close()
+
+		p, err := con.findPostByID(r.Context(), id)
+		if err != nil && errors.Is(err, errNotFound) {
+			w.WriteHeader(http.StatusNotFound)
+			renderTemplate(s, w, templateNameNotFound, "Not Found", nil)
+			return
+		}
+
+		renderTemplate(s, w, templateNameEditor, "記事を作成", templateEditor{
+			SubmitTarget: "/edit/post/" + idStr,
+			Post:         *p,
+		})
+	})
+
+	http.HandleFunc("POST /edit/post/{post_id}", func(w http.ResponseWriter, r *http.Request) {
+		s := resumeSession(r, kvs)
+		if !isTrustedUserSession(s) {
+			w.WriteHeader(http.StatusUnauthorized)
+			renderTemplate(s, w, templateNameError, "エラー", templateError{Title: "Unauthorized", Message: "ログインが必要."})
+			return
+		}
+
+		var p post
+		if err := readJSONFromBody(r, &p); err != nil {
+			log.Println(err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		idStr := r.PathValue("post_id")
+		id, err := strconv.ParseUint(idStr, 10, 64)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		if p.ID != id || p.URLKey == "" {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		con, err := getConnection()
+		if err != nil {
+			log.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		defer con.Close()
+
+		p.UpdatedDatetime = dateTimeNow()
+
+		if err := con.updatePost(r.Context(), p); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			log.Println(err)
+			return
+		}
+
+		j, _ := json.Marshal(redirectResponse{Location: p.getURL()})
+		w.Write(j)
 	})
 
 	// === 誰でもアクセス可能 ===
@@ -228,7 +311,7 @@ func Start() {
 		})
 	})
 
-	http.HandleFunc("GET /posts/limited/{url_key}", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("GET /posts/unlisted/{url_key}", func(w http.ResponseWriter, r *http.Request) {
 		key := r.PathValue("url_key")
 		s := resumeSession(r, kvs)
 
@@ -241,7 +324,7 @@ func Start() {
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			log.Println(err)
-			renderTemplate(nil, w, templateNameError, "エラー", templateError{Title: "Internal Server Error", Message: "記事の取得に失敗"})
+			renderTemplate(s, w, templateNameError, "エラー", templateError{Title: "Internal Server Error", Message: "記事の取得に失敗"})
 			return
 		}
 
@@ -267,7 +350,7 @@ func Start() {
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			log.Println(err)
-			renderTemplate(nil, w, templateNameError, "エラー", templateError{Title: "Internal Server Error", Message: "記事の取得に失敗"})
+			renderTemplate(s, w, templateNameError, "エラー", templateError{Title: "Internal Server Error", Message: "記事の取得に失敗"})
 			return
 		}
 
@@ -302,6 +385,33 @@ func Start() {
 	http.ListenAndServe(":8080", nil)
 }
 
+func isTrustedUserSession(s *session) bool {
+	u, ok := s.getUserID()
+
+	if !ok {
+		return false
+	}
+
+	if u != "comame" {
+		return false
+	}
+
+	return true
+}
+
+func readJSONFromBody(r *http.Request, v any) error {
+	b, err := io.ReadAll(r.Body)
+	if err != nil {
+		return err
+	}
+
+	if err := json.Unmarshal(b, v); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 type post struct {
 	ID              uint64         `json:"id"`
 	URLKey          string         `json:"url_key"`
@@ -329,7 +439,7 @@ func (p *post) getURL() string {
 	case postVisibilityPublic:
 		return fmt.Sprintf("/posts/public/%s", p.URLKey)
 	case postVisibilityLimited:
-		return fmt.Sprintf("/posts/limited/%s", p.URLKey)
+		return fmt.Sprintf("/posts/unlisted/%s", p.URLKey)
 	case postVisibilityPrivate:
 		return fmt.Sprintf("/posts/private/%s", p.URLKey)
 	}
@@ -337,13 +447,18 @@ func (p *post) getURL() string {
 	panic("unknown visibility")
 }
 
+func (p *post) editURL() string {
+	return fmt.Sprintf("/edit/post/%d", p.ID)
+}
+
 func getPost(ctx context.Context, urlKey string) (*post, error) {
 	c, err := getConnection()
 	if err != nil {
 		return nil, err
 	}
+	defer c.Close()
 
-	p, err := c.findPost(ctx, urlKey)
+	p, err := c.findPostByURLKey(ctx, urlKey)
 	if errors.Is(err, errNotFound) {
 		return nil, errNotFound
 	}
