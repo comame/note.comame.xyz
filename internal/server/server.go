@@ -356,7 +356,7 @@ func Start() {
 			return
 		}
 
-		if p.Visibility != postVisibilityLimited {
+		if p.Visibility != postVisibilityUnlisted {
 			w.WriteHeader(http.StatusNotFound)
 			renderTemplate(s, w, templateNameNotFound, "Not Found", nil)
 			return
@@ -457,7 +457,7 @@ const (
 	// 非公開
 	postVisibilityPrivate postVisibility = 0
 	// 限定公開
-	postVisibilityLimited = 1
+	postVisibilityUnlisted = 1
 	// 全体公開
 	postVisibilityPublic = 2
 )
@@ -466,7 +466,7 @@ func (p *post) getURL() string {
 	switch p.Visibility {
 	case postVisibilityPublic:
 		return fmt.Sprintf("/posts/public/%s", p.URLKey)
-	case postVisibilityLimited:
+	case postVisibilityUnlisted:
 		return fmt.Sprintf("/posts/unlisted/%s", p.URLKey)
 	case postVisibilityPrivate:
 		return fmt.Sprintf("/posts/private/%s", p.URLKey)
@@ -477,6 +477,19 @@ func (p *post) getURL() string {
 
 func (p *post) editURL() string {
 	return fmt.Sprintf("/edit/post/%d", p.ID)
+}
+
+func (p *post) visibilityLabel() string {
+	switch p.Visibility {
+	case postVisibilityPublic:
+		return "一般公開"
+	case postVisibilityUnlisted:
+		return "限定公開"
+	case postVisibilityPrivate:
+		return "非公開"
+	}
+
+	panic("unknown visibility")
 }
 
 func getPost(ctx context.Context, urlKey string) (*post, error) {

@@ -63,3 +63,26 @@ nav#app-nav {
   margin: 0;
   padding: 0;
 }
+
+.c-visibility {
+  display: inline-block;
+  font-size: 11px;
+  line-height: 1.5;
+  padding: 2px 4px;
+  border-radius: 4px;
+
+  &[data-visibility="0"] {
+    background: #c82828;
+    color: white;
+  }
+
+  &[data-visibility="1"] {
+    background: #0e7a1b;
+    color: white;
+  }
+
+  &[data-visibility="2"] {
+    background: #4264c2;
+    color: white;
+  }
+}

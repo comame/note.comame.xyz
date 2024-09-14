@@ -1,0 +1,17 @@
+#body ul {
+    padding-left: 0;
+    padding: 16px;
+
+    li {
+        list-style: none;
+        margin-bottom: 16px;
+    }
+
+    .meta {
+        margin-bottom: 4px;
+    }
+
+    .title {
+        color: #063e74;
+    }
+}

@@ -59,6 +59,9 @@ func setupTemplate() *template.Template {
 		"editURL": func(p post) string {
 			return p.editURL()
 		},
+		"visibilityLabel": func(p post) string {
+			return p.visibilityLabel()
+		},
 	})
 	template.Must(t.ParseGlob("templates/*.html"))
 	return t

@@ -1,6 +1,11 @@
 <link rel="stylesheet" href="/static/post-page.css" />
 <div id="post">
-  <h1 class="title">{{.Post.Title}}</h1>
+  <div class="metadata-title">
+    <h1 class="title">{{.Post.Title}}</h1>
+    <span class="c-visibility" data-visibility="{{ html .Post.Visibility }}"
+      >{{ visibilityLabel .Post | html }}</span
+    >
+  </div>
   <ul class="time">
     <li>
       created:&nbsp;
