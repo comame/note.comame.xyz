@@ -4,7 +4,30 @@
     <div>
       <a href="{{ postURL . | html}}">{{ html .Title }}</a>
       <a href="{{ editURL . | html }}">EDIT</a>
+      <button data-id="{{ .ID | html}}" class="delete-button">DELETE</button>
     </div>
   </li>
   {{ end }}
 </ul>
+
+<script>
+  const buttons = document.querySelectorAll(".delete-button");
+  for (const b of buttons) {
+    b.addEventListener("click", (e) => {
+      if (!confirm("削除しますか？")) {
+        return;
+      }
+
+      const id = e.currentTarget.getAttribute("data-id");
+      fetch("/delete/post/" + id, {
+        method: "POST",
+      }).then((res) => {
+        if (!res.ok) {
+          return;
+        }
+
+        location.reload();
+      });
+    });
+  }
+</script>

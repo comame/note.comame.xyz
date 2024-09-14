@@ -166,3 +166,34 @@ func (c *connection) updatePost(ctx context.Context, post post) error {
 
 	return nil
 }
+
+func (c *connection) deletePost(ctx context.Context, postID uint64) error {
+	tx, err := c.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	r, err := tx.ExecContext(ctx, `
+		DELETE FROM nt_post
+		WHERE id=?
+	`, postID)
+	if err != nil {
+		return err
+	}
+
+	a, err := r.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if a != 1 {
+		return errNotFound
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	return nil
+}

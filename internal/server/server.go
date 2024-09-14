@@ -238,7 +238,6 @@ func Start() {
 		s := resumeSession(r, kvs)
 		if !isTrustedUserSession(s) {
 			w.WriteHeader(http.StatusUnauthorized)
-			renderTemplate(s, w, templateNameError, "エラー", templateError{Title: "Unauthorized", Message: "ログインが必要."})
 			return
 		}
 
@@ -279,6 +278,35 @@ func Start() {
 
 		j, _ := json.Marshal(redirectResponse{Location: p.getURL()})
 		w.Write(j)
+	})
+
+	http.HandleFunc("POST /delete/post/{post_id}", func(w http.ResponseWriter, r *http.Request) {
+		s := resumeSession(r, kvs)
+		if !isTrustedUserSession(s) {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
+		idStr := r.PathValue("post_id")
+		id, err := strconv.ParseUint(idStr, 10, 64)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		con, err := getConnection()
+		if err != nil {
+			log.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		defer con.Close()
+
+		if err := con.deletePost(r.Context(), id); err != nil {
+			log.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 	})
 
 	// === 誰でもアクセス可能 ===
