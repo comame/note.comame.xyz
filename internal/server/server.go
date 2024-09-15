@@ -30,11 +30,17 @@ func Start() {
 	oidc.InitializeDiscovery(oidcIssuer)
 	kvs := initKVS()
 
+	// ログインを開始する
 	http.HandleFunc("GET /login", func(w http.ResponseWriter, r *http.Request) {
+		setCommonHeaders(w)
+		if _, ok := validateRequest(false, r, kvs); !ok {
+			renderBadRequest(nil, w)
+			return
+		}
+
 		u, s, err := oidc.GenerateAuthenticationRequestUrl(oidcClientID, oidcRedirectURI, kvs)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			renderTemplate(nil, w, templateNameError, "エラー", templateError{Title: "Internal Server Error", Message: "ログインに失敗."})
+			renderInternalServerError(nil, w)
 			return
 		}
 
@@ -50,21 +56,31 @@ func Start() {
 	})
 
 	http.HandleFunc("GET /logout", func(w http.ResponseWriter, r *http.Request) {
+		setCommonHeaders(w)
+		if _, ok := validateRequest(false, r, kvs); !ok {
+			renderBadRequest(nil, w)
+			return
+		}
+
 		destroySession(w, r, kvs)
 		http.Redirect(w, r, "/", http.StatusFound)
 	})
 
 	http.HandleFunc("GET /login/oidc-callback", func(w http.ResponseWriter, r *http.Request) {
+		setCommonHeaders(w)
+		if _, ok := validateRequest(false, r, kvs); !ok {
+			renderBadRequest(nil, w)
+			return
+		}
+
 		c, err := r.Cookie("state")
 		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			renderTemplate(nil, w, templateNameError, "エラー", templateError{Title: "Bad Request", Message: "ログインに失敗."})
+			renderInternalServerError(nil, w)
 			return
 		}
 		p, err := oidc.CallbackCode(c.Value, r.URL.Query(), oidcClientID, oidcClientSecret, oidcRedirectURI, kvs, oidcAud)
 		if err != nil {
-			renderTemplate(nil, w, templateNameError, "エラー", templateError{Title: "Bad Request", Message: "ログインに失敗."})
-			w.WriteHeader(http.StatusBadRequest)
+			renderInternalServerError(nil, w)
 			return
 		}
 
@@ -75,10 +91,10 @@ func Start() {
 	// === ログイン専用 ===
 
 	http.HandleFunc("GET /post/new", func(w http.ResponseWriter, r *http.Request) {
-		s := resumeSession(r, kvs)
-		if !isTrustedUserSession(s) {
-			w.WriteHeader(http.StatusUnauthorized)
-			renderTemplate(nil, w, templateNameError, "エラー", templateError{Title: "Unauthorized", Message: "ログインが必要."})
+		setCommonHeaders(w)
+		s, ok := validateRequest(true, r, kvs)
+		if !ok {
+			renderBadRequest(s, w)
 			return
 		}
 
@@ -88,25 +104,15 @@ func Start() {
 	})
 
 	http.HandleFunc("POST /post/create", func(w http.ResponseWriter, r *http.Request) {
-		if !isCSRFSafe(r) {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		s := resumeSession(r, kvs)
-		if !isTrustedUserSession(s) {
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}
-
-		b, err := io.ReadAll(r.Body)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
+		setCommonHeaders(w)
+		s, ok := validateRequest(true, r, kvs)
+		if !ok {
+			renderBadRequest(s, w)
 			return
 		}
 
 		var p post
-		if err := json.Unmarshal(b, &p); err != nil {
+		if err := readJSONFromBody(r, &p); err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
@@ -142,10 +148,10 @@ func Start() {
 	})
 
 	http.HandleFunc("GET /posts/private/{url_key}", func(w http.ResponseWriter, r *http.Request) {
-		s := resumeSession(r, kvs)
-		if !isTrustedUserSession(s) {
-			w.WriteHeader(http.StatusUnauthorized)
-			renderTemplate(s, w, templateNameError, "エラー", templateError{Title: "Unauthorized", Message: "ログインが必要."})
+		setCommonHeaders(w)
+		s, ok := validateRequest(true, r, kvs)
+		if !ok {
+			renderBadRequest(nil, w)
 			return
 		}
 
@@ -153,20 +159,16 @@ func Start() {
 
 		p, err := getPost(r.Context(), key)
 		if err != nil && errors.Is(err, errNotFound) {
-			w.WriteHeader(http.StatusNotFound)
-			renderTemplate(s, w, templateNameNotFound, "Not Found", nil)
+			renderNotFound(s, w)
 			return
 		}
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			log.Println(err)
-			renderTemplate(s, w, templateNameError, "エラー", templateError{Title: "Internal Server Error", Message: "記事の取得に失敗"})
+			renderInternalServerError(s, w)
 			return
 		}
 
 		if p.Visibility != postVisibilityPrivate {
-			w.WriteHeader(http.StatusNotFound)
-			renderTemplate(s, w, templateNameNotFound, "Not Found", nil)
+			renderNotFound(s, w)
 			return
 		}
 
@@ -174,18 +176,17 @@ func Start() {
 	})
 
 	http.HandleFunc("GET /manage/posts", func(w http.ResponseWriter, r *http.Request) {
-		s := resumeSession(r, kvs)
-		if !isTrustedUserSession(s) {
-			w.WriteHeader(http.StatusUnauthorized)
-			renderTemplate(s, w, templateNameError, "エラー", templateError{Title: "Unauthorized", Message: "ログインが必要."})
+		setCommonHeaders(w)
+		s, ok := validateRequest(true, r, kvs)
+		if !ok {
+			renderBadRequest(nil, w)
 			return
 		}
 
 		con, err := getConnection()
 		if err != nil {
 			log.Println(err)
-			w.WriteHeader(http.StatusInternalServerError)
-			renderTemplate(s, w, templateNameError, "エラー", templateError{Title: "Internal Server Error", Message: "エラー"})
+			renderInternalServerError(s, w)
 			return
 		}
 		defer con.Close()
@@ -193,8 +194,7 @@ func Start() {
 		p, err := con.getPosts(r.Context())
 		if err != nil {
 			log.Println(err)
-			w.WriteHeader(http.StatusInternalServerError)
-			renderTemplate(s, w, templateNameError, "エラー", templateError{Title: "Internal Server Error", Message: "エラー"})
+			renderInternalServerError(s, w)
 			return
 		}
 
@@ -202,34 +202,31 @@ func Start() {
 	})
 
 	http.HandleFunc("GET /edit/post/{post_id}", func(w http.ResponseWriter, r *http.Request) {
-		s := resumeSession(r, kvs)
-		if !isTrustedUserSession(s) {
-			w.WriteHeader(http.StatusUnauthorized)
-			renderTemplate(s, w, templateNameError, "エラー", templateError{Title: "Unauthorized", Message: "ログインが必要."})
+		setCommonHeaders(w)
+		s, ok := validateRequest(true, r, kvs)
+		if !ok {
+			renderBadRequest(nil, w)
 			return
 		}
 
 		idStr := r.PathValue("post_id")
 		id, err := strconv.ParseUint(idStr, 10, 64)
 		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			renderTemplate(s, w, templateNameError, "エラー", templateError{Title: "Bad Request", Message: "不正なリクエスト"})
+			renderBadRequest(s, w)
 			return
 		}
 
 		con, err := getConnection()
 		if err != nil {
 			log.Println(err)
-			w.WriteHeader(http.StatusInternalServerError)
-			renderTemplate(s, w, templateNameError, "エラー", templateError{Title: "Internal Server Error", Message: "エラー"})
+			renderInternalServerError(s, w)
 			return
 		}
 		defer con.Close()
 
 		p, err := con.findPostByID(r.Context(), id)
 		if err != nil && errors.Is(err, errNotFound) {
-			w.WriteHeader(http.StatusNotFound)
-			renderTemplate(s, w, templateNameNotFound, "Not Found", nil)
+			renderNotFound(s, w)
 			return
 		}
 
@@ -240,14 +237,9 @@ func Start() {
 	})
 
 	http.HandleFunc("POST /edit/post/{post_id}", func(w http.ResponseWriter, r *http.Request) {
-		if !isCSRFSafe(r) {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		s := resumeSession(r, kvs)
-		if !isTrustedUserSession(s) {
-			w.WriteHeader(http.StatusUnauthorized)
+		setCommonHeaders(w)
+		if _, ok := validateRequest(true, r, kvs); !ok {
+			renderBadRequest(nil, w)
 			return
 		}
 
@@ -291,14 +283,9 @@ func Start() {
 	})
 
 	http.HandleFunc("POST /delete/post/{post_id}", func(w http.ResponseWriter, r *http.Request) {
-		if !isCSRFSafe(r) {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		s := resumeSession(r, kvs)
-		if !isTrustedUserSession(s) {
-			w.WriteHeader(http.StatusUnauthorized)
+		setCommonHeaders(w)
+		if _, ok := validateRequest(true, r, kvs); !ok {
+			renderBadRequest(nil, w)
 			return
 		}
 
@@ -327,20 +314,23 @@ func Start() {
 	// === 誰でもアクセス可能 ===
 
 	http.HandleFunc("GET /editor/demo", func(w http.ResponseWriter, r *http.Request) {
-		s := resumeSession(r, kvs)
+		setCommonHeaders(w)
+		s, ok := validateRequest(false, r, kvs)
+		if !ok {
+			renderBadRequest(nil, w)
+			return
+		}
 
 		f, err := os.Open("static/demo.md")
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			renderTemplate(s, w, templateNameError, "エラー", templateError{Title: "Internal Server Error", Message: "エラー"})
+			renderInternalServerError(s, w)
 			return
 		}
 		defer f.Close()
 
 		c, err := io.ReadAll(f)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			renderTemplate(s, w, templateNameError, "エラー", templateError{Title: "Internal Server Error", Message: "エラー"})
+			renderInternalServerError(s, w)
 			return
 		}
 
@@ -355,25 +345,27 @@ func Start() {
 	})
 
 	http.HandleFunc("GET /posts/unlisted/{url_key}", func(w http.ResponseWriter, r *http.Request) {
+		setCommonHeaders(w)
+		s, ok := validateRequest(false, r, kvs)
+		if !ok {
+			renderBadRequest(nil, w)
+			return
+		}
+
 		key := r.PathValue("url_key")
-		s := resumeSession(r, kvs)
 
 		p, err := getPost(r.Context(), key)
 		if err != nil && errors.Is(err, errNotFound) {
-			w.WriteHeader(http.StatusNotFound)
-			renderTemplate(s, w, templateNameNotFound, "Not Found", nil)
+			renderNotFound(s, w)
 			return
 		}
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			log.Println(err)
-			renderTemplate(s, w, templateNameError, "エラー", templateError{Title: "Internal Server Error", Message: "記事の取得に失敗"})
+			renderInternalServerError(s, w)
 			return
 		}
 
 		if p.Visibility != postVisibilityUnlisted {
-			w.WriteHeader(http.StatusNotFound)
-			renderTemplate(s, w, templateNameNotFound, "Not Found", nil)
+			renderNotFound(s, w)
 			return
 		}
 
@@ -381,25 +373,27 @@ func Start() {
 	})
 
 	http.HandleFunc("GET /posts/public/{url_key}", func(w http.ResponseWriter, r *http.Request) {
+		setCommonHeaders(w)
+		s, ok := validateRequest(false, r, kvs)
+		if !ok {
+			renderBadRequest(nil, w)
+			return
+		}
+
 		key := r.PathValue("url_key")
-		s := resumeSession(r, kvs)
 
 		p, err := getPost(r.Context(), key)
 		if err != nil && errors.Is(err, errNotFound) {
-			w.WriteHeader(http.StatusNotFound)
-			renderTemplate(s, w, templateNameNotFound, "Not Found", nil)
+			renderNotFound(s, w)
 			return
 		}
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			log.Println(err)
-			renderTemplate(s, w, templateNameError, "エラー", templateError{Title: "Internal Server Error", Message: "記事の取得に失敗"})
+			renderInternalServerError(s, w)
 			return
 		}
 
 		if p.Visibility != postVisibilityPublic {
-			w.WriteHeader(http.StatusNotFound)
-			renderTemplate(s, w, templateNameNotFound, "Not Found", nil)
+			renderNotFound(s, w)
 			return
 		}
 
@@ -414,60 +408,23 @@ func Start() {
 	))
 
 	http.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusNotFound)
-
-		if strings.Contains(r.Header.Get("Accept"), "text/html") {
-			s := resumeSession(r, kvs)
-			renderTemplate(s, w, templateNameNotFound, "Not Found", nil)
+		setCommonHeaders(w)
+		s, ok := validateRequest(false, r, kvs)
+		if !ok {
+			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
+		if strings.Contains(r.Header.Get("Accept"), "text/html") {
+			renderNotFound(s, w)
+			return
+		}
+
+		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte("Not found"))
 	})
 
-	http.ListenAndServe(":8080", nil)
-}
-
-func isTrustedUserSession(s *session) bool {
-	u, ok := s.getUserID()
-
-	if !ok {
-		return false
-	}
-
-	if u != "comame" {
-		return false
-	}
-
-	return true
-}
-
-func readJSONFromBody(r *http.Request, v any) error {
-	b, err := io.ReadAll(r.Body)
-	if err != nil {
-		return err
-	}
-
-	if err := json.Unmarshal(b, v); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func isCSRFSafe(r *http.Request) bool {
-	a := r.Header.Get("Origin")
-	b := os.Getenv("ORIGIN")
-
-	if b == "" || a == "" {
-		return false
-	}
-
-	if a != b {
-		return false
-	}
-
-	return true
+	http.ListenAndServe(":8080", http.DefaultServeMux)
 }
 
 type post struct {
