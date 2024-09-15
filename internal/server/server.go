@@ -88,6 +88,11 @@ func Start() {
 	})
 
 	http.HandleFunc("POST /post/create", func(w http.ResponseWriter, r *http.Request) {
+		if !isCSRFSafe(r) {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
 		s := resumeSession(r, kvs)
 		if !isTrustedUserSession(s) {
 			w.WriteHeader(http.StatusUnauthorized)
@@ -235,6 +240,11 @@ func Start() {
 	})
 
 	http.HandleFunc("POST /edit/post/{post_id}", func(w http.ResponseWriter, r *http.Request) {
+		if !isCSRFSafe(r) {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
 		s := resumeSession(r, kvs)
 		if !isTrustedUserSession(s) {
 			w.WriteHeader(http.StatusUnauthorized)
@@ -281,6 +291,11 @@ func Start() {
 	})
 
 	http.HandleFunc("POST /delete/post/{post_id}", func(w http.ResponseWriter, r *http.Request) {
+		if !isCSRFSafe(r) {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
 		s := resumeSession(r, kvs)
 		if !isTrustedUserSession(s) {
 			w.WriteHeader(http.StatusUnauthorized)
@@ -438,6 +453,21 @@ func readJSONFromBody(r *http.Request, v any) error {
 	}
 
 	return nil
+}
+
+func isCSRFSafe(r *http.Request) bool {
+	a := r.Header.Get("Origin")
+	b := os.Getenv("ORIGIN")
+
+	if b == "" || a == "" {
+		return false
+	}
+
+	if a != b {
+		return false
+	}
+
+	return true
 }
 
 type post struct {
