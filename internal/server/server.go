@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,7 +11,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/comame/note.comame.xyz/internal/md"
 	oidc "github.com/comame/note.comame.xyz/internal/odic"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -111,39 +109,19 @@ func Start() {
 			return
 		}
 
-		var p post
-		if err := readJSONFromBody(r, &p); err != nil {
+		var p1 post
+		if err := readJSONFromBody(r, &p1); err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
-		u, err := randomString(32)
+		p2, err := createPost(r.Context(), p1)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
-		p.URLKey = u
-
-		now := dateTimeNow()
-		p.CreatedDatetime = now
-		p.UpdatedDatetime = now
-
-		con, err := getConnection()
-		if err != nil {
-			log.Println(err)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		defer con.Close()
-
-		if err := con.createPost(r.Context(), p); err != nil {
-			log.Println(err)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
-		j, _ := json.Marshal(redirectResponse{Location: p.getURL()})
+		j, _ := json.Marshal(redirectResponse{Location: p2.getURL()})
 		w.Write(j)
 	})
 
@@ -157,18 +135,13 @@ func Start() {
 
 		key := r.PathValue("url_key")
 
-		p, err := getPost(r.Context(), key)
+		p, err := getPost(r.Context(), key, postVisibilityPrivate)
 		if err != nil && errors.Is(err, errNotFound) {
 			renderNotFound(s, w)
 			return
 		}
 		if err != nil {
 			renderInternalServerError(s, w)
-			return
-		}
-
-		if p.Visibility != postVisibilityPrivate {
-			renderNotFound(s, w)
 			return
 		}
 
@@ -189,7 +162,6 @@ func Start() {
 			renderInternalServerError(s, w)
 			return
 		}
-		defer con.Close()
 
 		p, err := con.getPosts(r.Context())
 		if err != nil {
@@ -222,7 +194,6 @@ func Start() {
 			renderInternalServerError(s, w)
 			return
 		}
-		defer con.Close()
 
 		p, err := con.findPostByID(r.Context(), id)
 		if err != nil && errors.Is(err, errNotFound) {
@@ -262,23 +233,13 @@ func Start() {
 			return
 		}
 
-		con, err := getConnection()
+		p2, err := updatePost(r.Context(), p)
 		if err != nil {
-			log.Println(err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		defer con.Close()
 
-		p.UpdatedDatetime = dateTimeNow()
-
-		if err := con.updatePost(r.Context(), p); err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			log.Println(err)
-			return
-		}
-
-		j, _ := json.Marshal(redirectResponse{Location: p.getURL()})
+		j, _ := json.Marshal(redirectResponse{Location: p2.getURL()})
 		w.Write(j)
 	})
 
@@ -302,7 +263,6 @@ func Start() {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		defer con.Close()
 
 		if err := con.deletePost(r.Context(), id); err != nil {
 			log.Println(err)
@@ -354,7 +314,7 @@ func Start() {
 
 		key := r.PathValue("url_key")
 
-		p, err := getPost(r.Context(), key)
+		p, err := getPost(r.Context(), key, postVisibilityUnlisted)
 		if err != nil && errors.Is(err, errNotFound) {
 			renderNotFound(s, w)
 			return
@@ -382,7 +342,7 @@ func Start() {
 
 		key := r.PathValue("url_key")
 
-		p, err := getPost(r.Context(), key)
+		p, err := getPost(r.Context(), key, postVisibilityPublic)
 		if err != nil && errors.Is(err, errNotFound) {
 			renderNotFound(s, w)
 			return
@@ -425,78 +385,6 @@ func Start() {
 	})
 
 	http.ListenAndServe(":8080", http.DefaultServeMux)
-}
-
-type post struct {
-	ID              uint64         `json:"id"`
-	URLKey          string         `json:"url_key"`
-	CreatedDatetime string         `json:"-"`
-	UpdatedDatetime string         `json:"-"`
-	Title           string         `json:"title"`
-	Text            string         `json:"text"`
-	Visibility      postVisibility `json:"visibility"`
-	HTML            string         `json:"-"`
-}
-
-type postVisibility int
-
-const (
-	// 非公開
-	postVisibilityPrivate postVisibility = 0
-	// 限定公開
-	postVisibilityUnlisted = 1
-	// 全体公開
-	postVisibilityPublic = 2
-)
-
-func (p *post) getURL() string {
-	switch p.Visibility {
-	case postVisibilityPublic:
-		return fmt.Sprintf("/posts/public/%s", p.URLKey)
-	case postVisibilityUnlisted:
-		return fmt.Sprintf("/posts/unlisted/%s", p.URLKey)
-	case postVisibilityPrivate:
-		return fmt.Sprintf("/posts/private/%s", p.URLKey)
-	}
-
-	panic("unknown visibility")
-}
-
-func (p *post) editURL() string {
-	return fmt.Sprintf("/edit/post/%d", p.ID)
-}
-
-func (p *post) visibilityLabel() string {
-	switch p.Visibility {
-	case postVisibilityPublic:
-		return "一般公開"
-	case postVisibilityUnlisted:
-		return "限定公開"
-	case postVisibilityPrivate:
-		return "非公開"
-	}
-
-	panic("unknown visibility")
-}
-
-func getPost(ctx context.Context, urlKey string) (*post, error) {
-	c, err := getConnection()
-	if err != nil {
-		return nil, err
-	}
-	defer c.Close()
-
-	p, err := c.findPostByURLKey(ctx, urlKey)
-	if errors.Is(err, errNotFound) {
-		return nil, errNotFound
-	}
-	if err != nil {
-		return nil, err
-	}
-
-	p.HTML = md.ToHTML(p.Text)
-
-	return p, nil
 }
 
 type redirectResponse struct {

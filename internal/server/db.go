@@ -12,18 +12,18 @@ type connection struct {
 
 var errNotFound = errors.New("not found")
 
+var dbInstance *sql.DB
+
 func getConnection() (*connection, error) {
-	// TODO: コネクションプールとかを使う
-	db, err := sql.Open("mysql", "root:root@(mysql.comame.dev)/note")
-	if err != nil {
-		return nil, err
+	if dbInstance == nil {
+		db, err := sql.Open("mysql", "root:root@(mysql.comame.dev)/note")
+		if err != nil {
+			return nil, err
+		}
+		dbInstance = db
 	}
 
-	return &connection{db}, nil
-}
-
-func (c *connection) Close() {
-	c.db.Close()
+	return &connection{dbInstance}, nil
 }
 
 func (c *connection) findPostByURLKey(ctx context.Context, urlKey string) (*post, error) {
@@ -32,10 +32,10 @@ func (c *connection) findPostByURLKey(ctx context.Context, urlKey string) (*post
 		FROM nt_post
 		WHERE url_key = ?
 	`, urlKey)
-
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	if !rows.Next() {
 		return nil, errNotFound
@@ -58,6 +58,7 @@ func (c *connection) findPostByID(ctx context.Context, id uint64) (*post, error)
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	if !rows.Next() {
 		return nil, errNotFound
@@ -109,6 +110,7 @@ func (c *connection) getPosts(ctx context.Context) ([]post, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	var p []post
 	for rows.Next() {

@@ -2,12 +2,17 @@ package server
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"os"
 )
 
 func readJSONFromBody(r *http.Request, v any) error {
+	if r.Header.Get("Content-Type") != "application/json" {
+		return errors.New("content type is not application/json")
+	}
+
 	b, err := io.ReadAll(r.Body)
 	if err != nil {
 		return err
