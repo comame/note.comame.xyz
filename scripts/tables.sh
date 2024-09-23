@@ -10,4 +10,5 @@ mysqldump -h"$host" -uroot -p --databases "$database" \
     --skip-comments \
 | sed -r '/^USE/d' \
 | sed -r '/^\/\*!/d' \
+| sed -r 's/;$/;\n/g' \
 > tables.sql

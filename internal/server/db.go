@@ -232,3 +232,33 @@ func (c *connection) deletePostInTransaction(ctx context.Context, postID uint64)
 
 	return nil
 }
+
+func (c *connection) copyPostToPostLogInTransaction(ctx context.Context, postID uint64) error {
+	if err := c.transactionGuard(); err != nil {
+		return err
+	}
+
+	if _, err := c.tx.ExecContext(ctx, `
+		INSERT INTO nt_post_log (
+			post_id,
+			url_key,
+			created_datetime,
+			updated_datetime,
+			text,
+			visibility
+		)
+		SELECT
+			id,
+			url_key,
+			created_datetime,
+			updated_datetime,
+			text,
+			visibility
+		FROM nt_post
+		WHERE nt_post.id = ?
+	`, postID); err != nil {
+		return err
+	}
+
+	return nil
+}

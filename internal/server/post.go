@@ -30,6 +30,11 @@ const (
 	postVisibilityPublic = 2
 )
 
+var (
+	// post.ID = 0 のとき、意図せずゼロ値が入ってしまっている可能性が高いのでエラーとする
+	errIDIsZero = errors.New("id is zero")
+)
+
 func (p *post) getURL() string {
 	switch p.Visibility {
 	case postVisibilityPublic:
@@ -107,6 +112,10 @@ func createPost(ctx context.Context, p post) (*post, error) {
 }
 
 func updatePost(ctx context.Context, p post) (*post, error) {
+	if p.ID == 0 {
+		return nil, errIDIsZero
+	}
+
 	con, err := GetConnection()
 	if err != nil {
 		return nil, err
@@ -116,6 +125,10 @@ func updatePost(ctx context.Context, p post) (*post, error) {
 		return nil, err
 	}
 	defer con.Rollback()
+
+	if err := con.copyPostToPostLogInTransaction(ctx, p.ID); err != nil {
+		return nil, err
+	}
 
 	p.UpdatedDatetime = dateTimeNow()
 
@@ -131,6 +144,10 @@ func updatePost(ctx context.Context, p post) (*post, error) {
 }
 
 func deletePost(ctx context.Context, postID uint64) error {
+	if postID == 0 {
+		return errIDIsZero
+	}
+
 	con, err := GetConnection()
 	if err != nil {
 		return err
@@ -140,6 +157,10 @@ func deletePost(ctx context.Context, postID uint64) error {
 		return err
 	}
 	defer con.Rollback()
+
+	if err := con.copyPostToPostLogInTransaction(ctx, postID); err != nil {
+		return err
+	}
 
 	if err := con.deletePostInTransaction(ctx, postID); err != nil {
 		return err
