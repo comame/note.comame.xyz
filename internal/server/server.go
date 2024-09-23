@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-	"strings"
 
 	oidc "github.com/comame/note.comame.xyz/internal/odic"
 
@@ -360,12 +359,23 @@ func Start() {
 		renderTemplate(s, w, templateNamePost, p.Title, templatePost{Post: *p})
 	})
 
-	http.Handle("GET /static/", http.StripPrefix("/static/",
-		http.FileServer(http.Dir("static")),
-	))
-	http.Handle("GET /out/dist/", http.StripPrefix("/out/dist/",
-		http.FileServer(http.Dir("out/dist")),
-	))
+	http.HandleFunc("GET /static/", func(w http.ResponseWriter, r *http.Request) {
+		setCommonHeaders(w)
+		if _, ok := validateRequest(false, r, kvs); !ok {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		http.StripPrefix("/static/", http.FileServer(http.Dir("static"))).ServeHTTP(w, r)
+	})
+
+	http.HandleFunc("GET /out/dist/", func(w http.ResponseWriter, r *http.Request) {
+		setCommonHeaders(w)
+		if _, ok := validateRequest(false, r, kvs); !ok {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		http.StripPrefix("/out/dist/", http.FileServer(http.Dir("out/dist"))).ServeHTTP(w, r)
+	})
 
 	http.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
 		setCommonHeaders(w)
@@ -375,7 +385,7 @@ func Start() {
 			return
 		}
 
-		if strings.Contains(r.Header.Get("Accept"), "text/html") {
+		if isPageRequest(r) {
 			renderNotFound(s, w)
 			return
 		}

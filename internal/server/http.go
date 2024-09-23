@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strings"
 )
 
 func readJSONFromBody(r *http.Request, v any) error {
@@ -62,6 +63,10 @@ func validateRequest(requireLogin bool, r *http.Request, kvs *kvs) (s *session, 
 	}
 
 	return s, true
+}
+
+func isPageRequest(r *http.Request) bool {
+	return strings.Contains(r.Header.Get("Accept"), "text/html")
 }
 
 func renderBadRequest(s *session, w http.ResponseWriter) {

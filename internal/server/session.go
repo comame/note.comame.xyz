@@ -39,7 +39,7 @@ func startNewSession(w http.ResponseWriter, userID string, kvs *kvs) *session {
 }
 
 func destroySession(w http.ResponseWriter, r *http.Request, kvs *kvs) {
-	if c, err := r.Cookie("s"); err == nil {
+	if c, err := r.Cookie("s"); err == nil /* err IS nil */ {
 		kvs.DeleteSession(c.Value)
 	}
 
