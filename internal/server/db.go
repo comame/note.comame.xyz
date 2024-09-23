@@ -9,13 +9,15 @@ import (
 
 type connection struct {
 	db *sql.DB
+	tx *sql.Tx
 }
 
 var errNotFound = errors.New("not found")
+var errNotInTransaction = errors.New("not in transaction")
 
 var dbInstance *sql.DB
 
-func getConnection() (*connection, error) {
+func GetConnection() (*connection, error) {
 	if dbInstance == nil {
 		s := os.Getenv("MYSQL_CONNECT")
 		db, err := sql.Open("mysql", s)
@@ -25,7 +27,48 @@ func getConnection() (*connection, error) {
 		dbInstance = db
 	}
 
-	return &connection{dbInstance}, nil
+	return &connection{db: dbInstance, tx: nil}, nil
+}
+
+func (c *connection) Begin(ctx context.Context) error {
+	tx, err := c.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	c.tx = tx
+	return nil
+}
+
+func (c *connection) Rollback() error {
+	if c.tx == nil {
+		return nil
+	}
+
+	if err := c.tx.Rollback(); err != nil {
+		return err
+	}
+	c.tx = nil
+	return nil
+}
+
+func (c *connection) Commit() error {
+	if c.tx == nil {
+		return nil
+	}
+
+	if err := c.tx.Commit(); err != nil {
+		return err
+	}
+	c.tx = nil
+	return nil
+}
+
+func (c *connection) transactionGuard() error {
+	if c.tx == nil {
+		return errNotInTransaction
+	}
+
+	return nil
 }
 
 func (c *connection) findPostByURLKey(ctx context.Context, urlKey string) (*post, error) {
@@ -134,14 +177,12 @@ func (c *connection) getPosts(ctx context.Context) ([]post, error) {
 	return p, nil
 }
 
-func (c *connection) updatePost(ctx context.Context, post post) error {
-	tx, err := c.db.BeginTx(ctx, nil)
-	if err != nil {
+func (c *connection) updatePostInTransaction(ctx context.Context, post post) error {
+	if err := c.transactionGuard(); err != nil {
 		return err
 	}
-	defer tx.Rollback()
 
-	r, err := c.db.ExecContext(ctx, `
+	r, err := c.tx.ExecContext(ctx, `
 		UPDATE nt_post
 		SET
 			updated_datetime = ?,
@@ -164,21 +205,15 @@ func (c *connection) updatePost(ctx context.Context, post post) error {
 		return errNotFound
 	}
 
-	if err := tx.Commit(); err != nil {
-		return err
-	}
-
 	return nil
 }
 
-func (c *connection) deletePost(ctx context.Context, postID uint64) error {
-	tx, err := c.db.BeginTx(ctx, nil)
-	if err != nil {
+func (c *connection) deletePostInTransaction(ctx context.Context, postID uint64) error {
+	if err := c.transactionGuard(); err != nil {
 		return err
 	}
-	defer tx.Rollback()
 
-	r, err := tx.ExecContext(ctx, `
+	r, err := c.tx.ExecContext(ctx, `
 		DELETE FROM nt_post
 		WHERE id=?
 	`, postID)
@@ -193,10 +228,6 @@ func (c *connection) deletePost(ctx context.Context, postID uint64) error {
 
 	if a != 1 {
 		return errNotFound
-	}
-
-	if err := tx.Commit(); err != nil {
-		return err
 	}
 
 	return nil

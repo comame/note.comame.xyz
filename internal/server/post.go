@@ -61,7 +61,7 @@ func (p *post) visibilityLabel() string {
 }
 
 func getPost(ctx context.Context, urlKey string, visibility postVisibility) (*post, error) {
-	c, err := getConnection()
+	c, err := GetConnection()
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +94,7 @@ func createPost(ctx context.Context, p post) (*post, error) {
 	p.CreatedDatetime = now
 	p.UpdatedDatetime = now
 
-	con, err := getConnection()
+	con, err := GetConnection()
 	if err != nil {
 		return nil, err
 	}
@@ -107,16 +107,47 @@ func createPost(ctx context.Context, p post) (*post, error) {
 }
 
 func updatePost(ctx context.Context, p post) (*post, error) {
-	con, err := getConnection()
+	con, err := GetConnection()
 	if err != nil {
 		return nil, err
 	}
 
+	if err := con.Begin(ctx); err != nil {
+		return nil, err
+	}
+	defer con.Rollback()
+
 	p.UpdatedDatetime = dateTimeNow()
 
-	if err := con.updatePost(ctx, p); err != nil {
+	if err := con.updatePostInTransaction(ctx, p); err != nil {
+		return nil, err
+	}
+
+	if err := con.Commit(); err != nil {
 		return nil, err
 	}
 
 	return &p, nil
+}
+
+func deletePost(ctx context.Context, postID uint64) error {
+	con, err := GetConnection()
+	if err != nil {
+		return err
+	}
+
+	if err := con.Begin(ctx); err != nil {
+		return err
+	}
+	defer con.Rollback()
+
+	if err := con.deletePostInTransaction(ctx, postID); err != nil {
+		return err
+	}
+
+	if err := con.Commit(); err != nil {
+		return err
+	}
+
+	return nil
 }

@@ -155,7 +155,7 @@ func Start() {
 			return
 		}
 
-		con, err := getConnection()
+		con, err := GetConnection()
 		if err != nil {
 			log.Println(err)
 			renderInternalServerError(s, w)
@@ -187,7 +187,7 @@ func Start() {
 			return
 		}
 
-		con, err := getConnection()
+		con, err := GetConnection()
 		if err != nil {
 			log.Println(err)
 			renderInternalServerError(s, w)
@@ -234,6 +234,7 @@ func Start() {
 
 		p2, err := updatePost(r.Context(), p)
 		if err != nil {
+			log.Println(err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -256,14 +257,7 @@ func Start() {
 			return
 		}
 
-		con, err := getConnection()
-		if err != nil {
-			log.Println(err)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
-		if err := con.deletePost(r.Context(), id); err != nil {
+		if err := deletePost(r.Context(), id); err != nil {
 			log.Println(err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
