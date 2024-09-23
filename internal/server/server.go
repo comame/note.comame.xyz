@@ -394,6 +394,7 @@ func Start() {
 		w.Write([]byte("Not found"))
 	})
 
+	log.Println("start http://0.0.0.0:8080")
 	http.ListenAndServe(":8080", http.DefaultServeMux)
 }
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"os"
 )
 
 type connection struct {
@@ -16,7 +17,8 @@ var dbInstance *sql.DB
 
 func getConnection() (*connection, error) {
 	if dbInstance == nil {
-		db, err := sql.Open("mysql", "root:root@(mysql.comame.dev)/note")
+		s := os.Getenv("MYSQL_CONNECT")
+		db, err := sql.Open("mysql", s)
 		if err != nil {
 			return nil, err
 		}

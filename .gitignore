@@ -5,3 +5,5 @@ cover.out
 cover.html
 
 .env
+
+.testdb/

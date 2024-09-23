@@ -3,7 +3,7 @@ build: static_files server
 
 .PHONY: run
 run: build
-	./out/server
+	export $$(cat ./.env) && ./out/server
 
 .PHONY: server
 server: static_files
