@@ -371,6 +371,17 @@ func Start() {
 		http.StripPrefix("/out/dist/", http.FileServer(http.Dir("out/dist"))).ServeHTTP(w, r)
 	})
 
+	http.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
+		setCommonHeaders(w)
+		s, ok := validateRequest(false, r, kvs)
+		if !ok {
+			renderBadRequest(s, w)
+			return
+		}
+
+		renderTemplate(s, w, templateNameTop, "note.comame.xyz", templateTop{})
+	})
+
 	http.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
 		setCommonHeaders(w)
 		s, ok := validateRequest(false, r, kvs)
