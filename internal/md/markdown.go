@@ -151,6 +151,9 @@ func parseBlock(s string) []blockElement {
 
 		if l == "" {
 			flush()
+			ret = append(ret, blockElement{
+				kind: blockElementKindEmpty,
+			})
 			continue
 		}
 

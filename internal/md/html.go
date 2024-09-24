@@ -58,6 +58,9 @@ func blockElementsToHTML(elements []blockElement) string {
 			ret += "<h3>" + c + "</h3>"
 		case blockElementKindCodeBlock:
 			ret += "<pre><code>" + html.EscapeString(elements[i].codeText) + "</code></pre>"
+		case blockElementKindEmpty:
+			// 空行が挟まれたとき、リストを分割できるようにするための疑似要素
+			// 実際には何も出力しない
 		default:
 			panic("invalid blockElementKind")
 		}
