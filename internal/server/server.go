@@ -9,8 +9,9 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 
-	oidc "github.com/comame/note.comame.xyz/internal/odic"
+	"github.com/comame/note.comame.xyz/internal/oidc"
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -132,19 +133,7 @@ func Start() {
 			return
 		}
 
-		key := r.PathValue("url_key")
-
-		p, err := getPost(r.Context(), key, postVisibilityPrivate)
-		if err != nil && errors.Is(err, errNotFound) {
-			renderNotFound(s, w)
-			return
-		}
-		if err != nil {
-			renderInternalServerError(s, w)
-			return
-		}
-
-		renderTemplate(s, w, "post", p.Title+" | note.comame.xyz", templatePost{Post: *p})
+		postPage(w, r, s)
 	})
 
 	http.HandleFunc("GET /manage/posts", func(w http.ResponseWriter, r *http.Request) {
@@ -305,24 +294,7 @@ func Start() {
 			return
 		}
 
-		key := r.PathValue("url_key")
-
-		p, err := getPost(r.Context(), key, postVisibilityUnlisted)
-		if err != nil && errors.Is(err, errNotFound) {
-			renderNotFound(s, w)
-			return
-		}
-		if err != nil {
-			renderInternalServerError(s, w)
-			return
-		}
-
-		if p.Visibility != postVisibilityUnlisted {
-			renderNotFound(s, w)
-			return
-		}
-
-		renderTemplate(s, w, "post", p.Title+" | note.comame.xyz", templatePost{Post: *p})
+		postPage(w, r, s)
 	})
 
 	http.HandleFunc("GET /posts/public/{url_key}", func(w http.ResponseWriter, r *http.Request) {
@@ -333,24 +305,7 @@ func Start() {
 			return
 		}
 
-		key := r.PathValue("url_key")
-
-		p, err := getPost(r.Context(), key, postVisibilityPublic)
-		if err != nil && errors.Is(err, errNotFound) {
-			renderNotFound(s, w)
-			return
-		}
-		if err != nil {
-			renderInternalServerError(s, w)
-			return
-		}
-
-		if p.Visibility != postVisibilityPublic {
-			renderNotFound(s, w)
-			return
-		}
-
-		renderTemplate(s, w, templateNamePost, p.Title+" | note.comame.xyz", templatePost{Post: *p})
+		postPage(w, r, s)
 	})
 
 	http.HandleFunc("GET /static/", func(w http.ResponseWriter, r *http.Request) {
@@ -405,4 +360,35 @@ func Start() {
 
 type redirectResponse struct {
 	Location string `json:"location"`
+}
+
+func postPage(w http.ResponseWriter, r *http.Request, s *session) {
+	var v postVisibility
+	switch strings.Split(r.URL.Path, "/")[2] {
+	case "private":
+		v = postVisibilityPrivate
+	case "unlisted":
+		v = postVisibilityUnlisted
+	case "public":
+		v = postVisibilityPublic
+	}
+
+	key := r.PathValue("url_key")
+
+	p, err := getPost(r.Context(), key, v)
+	if err != nil && errors.Is(err, errNotFound) {
+		renderNotFound(s, w)
+		return
+	}
+	if err != nil {
+		renderInternalServerError(s, w)
+		return
+	}
+
+	if p.Visibility != v {
+		renderNotFound(s, w)
+		return
+	}
+
+	renderTemplate(s, w, "post", p.Title+" | note.comame.xyz", templatePost{Post: *p, EditLink: fmt.Sprintf("/edit/post/%d", p.ID)})
 }
