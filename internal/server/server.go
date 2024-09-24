@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"strings"
 
-	oidc "github.com/comame/note.comame.xyz/internal/odic"
+	"github.com/comame/note.comame.xyz/internal/oidc"
 
 	_ "github.com/go-sql-driver/mysql"
 )
