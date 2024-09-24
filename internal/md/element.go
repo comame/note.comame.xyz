@@ -4,11 +4,13 @@ type blockElement struct {
 	kind     blockElementKind
 	children inlineElement
 	// 1 or greater than 1
-	listLevel    int
-	imageSrc     string
-	imageCaption string
-	codeName     string
-	codeText     string
+	listLevel         int
+	imageSrc          string
+	imageCaption      string
+	codeName          string
+	codeText          string
+	checkboxList      bool
+	checkboxIsChecked bool
 }
 
 type blockElementKind int

@@ -68,6 +68,31 @@ func parseBlock(s string) []blockElement {
 		}
 
 		// 簡単のため、リストのインデントは常にスペース2つとする
+		// checkboxList は有効な list なので、list より前に検証する必要がある
+		checkboxListPattern := regexp.MustCompile(`^((?:  )*)- \[([ x])\](.+)$`)
+		if m := checkboxListPattern.FindStringSubmatch(l); len(m) > 0 {
+			flush()
+
+			d := m[1]
+			ch := m[2]
+			c := m[3]
+
+			checked := false
+			if ch == "x" {
+				checked = true
+			}
+
+			ret = append(ret, blockElement{
+				kind:              blockElementKindList,
+				children:          parseInlineTree(c),
+				listLevel:         len(d)/2 + 1,
+				checkboxList:      true,
+				checkboxIsChecked: checked,
+			})
+			continue
+		}
+
+		// 簡単のため、リストのインデントは常にスペース2つとする
 		listPattern := regexp.MustCompile((`^((?:  )*)- (.+)$`))
 		if m := listPattern.FindStringSubmatch(l); len(m) > 0 {
 			flush()

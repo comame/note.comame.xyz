@@ -23,17 +23,25 @@ func blockElementsToHTML(elements []blockElement) string {
 		case blockElementKindParagraph:
 			ret += "<p>" + c + "</p>"
 		case blockElementKindList:
+			liStart := "<li>"
+			if elements[i].checkboxList && elements[i].checkboxIsChecked {
+				liStart = "<li><input type='checkbox' checked>"
+			}
+			if elements[i].checkboxList && !elements[i].checkboxIsChecked {
+				liStart = "<li><input type='checkbox'>"
+			}
+
 			if previousListLevel == elements[i].listLevel {
-				ret += "<li>" + c + "</li>"
+				ret += liStart + c + "</li>"
 			} else if previousListLevel < elements[i].listLevel {
 				previousListLevel++
-				ret += "<ul><li>" + c + "</li>"
+				ret += "<ul>" + liStart + c + "</li>"
 			} else {
 				for previousListLevel > elements[i].listLevel {
 					previousListLevel--
 					ret += "</ul>"
 				}
-				ret += "<li>" + c + "</li>"
+				ret += liStart + c + "</li>"
 			}
 		case blockElementKindImage:
 			ret += fmt.Sprintf(
