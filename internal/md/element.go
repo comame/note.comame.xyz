@@ -23,6 +23,8 @@ const (
 	blockElementKindHeading1
 	blockElementKindHeading2
 	blockElementKindHeading3
+	// 空行が挟まれたとき、リストを分割できるようにするための疑似要素
+	blockElementKindEmpty
 )
 
 type inlineElementKind int
