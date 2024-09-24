@@ -25,7 +25,9 @@ type templateError struct {
 }
 
 type templatePost struct {
-	Post post
+	Post       post
+	EditLink   string
+	IsLoggedIn bool
 }
 
 type templateEditor struct {
@@ -74,6 +76,12 @@ func setupTemplate() *template.Template {
 
 func renderTemplate(s *session, w http.ResponseWriter, name templateName, title string, param any) {
 	t := setupTemplate()
+
+	switch p := param.(type) {
+	case templatePost:
+		p.IsLoggedIn = s.isLoggedIn()
+		param = p
+	}
 
 	var b bytes.Buffer
 	if err := t.ExecuteTemplate(&b, string(name)+".html", param); err != nil {

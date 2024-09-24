@@ -5,6 +5,9 @@
     <span class="c-visibility" data-visibility="{{ html .Post.Visibility }}"
       >{{ visibilityLabel .Post | html }}</span
     >
+    {{ if .IsLoggedIn }}
+    <a href="{{ .EditLink }}">編集</a>
+    {{ end }}
   </div>
   <ul class="time">
     <li>
