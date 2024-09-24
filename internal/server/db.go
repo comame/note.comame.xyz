@@ -12,8 +12,11 @@ type connection struct {
 	tx *sql.Tx
 }
 
-var errNotFound = errors.New("not found")
-var errNotInTransaction = errors.New("not in transaction")
+var (
+	errNotFound             = errors.New("not found")
+	errNotInTransaction     = errors.New("not in transaction")
+	errAlreadyInTransaction = errors.New("already in transaction")
+)
 
 var dbInstance *sql.DB
 
@@ -31,6 +34,10 @@ func GetConnection() (*connection, error) {
 }
 
 func (c *connection) Begin(ctx context.Context) error {
+	if c.tx != nil {
+		return errAlreadyInTransaction
+	}
+
 	tx, err := c.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
