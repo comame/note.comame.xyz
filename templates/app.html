@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{{ .Title }}</title>
 
+    <meta property="og:title" content="{{ .Title  }}" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="note.comame.xyz" />
+    <meta property="og:description" content="{{ .OgDescription }}" />
+
     <link rel="stylesheet" href="/static/root.css" />
   </head>
   <body>

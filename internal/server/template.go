@@ -2,6 +2,7 @@ package server
 
 import (
 	"bytes"
+	"fmt"
 	"log"
 	"net/http"
 	"text/template"
@@ -15,6 +16,7 @@ const (
 	templateNameManagePosts templateName = "manage-posts"
 	templateNameNotFound    templateName = "not-found"
 	templateNamePost        templateName = "post"
+	templateNameTop         templateName = "top"
 )
 
 type templateError struct {
@@ -36,10 +38,13 @@ type templateManagePosts struct {
 	Posts []post
 }
 
+type templateTop struct{}
+
 type templateApp struct {
-	Title      string
-	Body       string
-	IsLoggedIn bool
+	Title         string
+	Body          string
+	IsLoggedIn    bool
+	OgDescription string
 }
 
 func setupTemplate() *template.Template {
@@ -77,10 +82,17 @@ func renderTemplate(s *session, w http.ResponseWriter, name templateName, title 
 		return
 	}
 
+	ogDescription := "note.comame.xyz"
+	if name == templateNamePost {
+		p := param.(templatePost)
+		ogDescription = fmt.Sprintf("%d字", len(p.Post.Text))
+	}
+
 	if err := t.ExecuteTemplate(w, "app.html", templateApp{
-		Title:      title,
-		Body:       b.String(),
-		IsLoggedIn: s.isLoggedIn(),
+		Title:         title,
+		Body:          b.String(),
+		IsLoggedIn:    s.isLoggedIn(),
+		OgDescription: ogDescription,
 	}); err != nil {
 		panic(err)
 	}

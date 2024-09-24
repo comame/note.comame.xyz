@@ -144,7 +144,7 @@ func Start() {
 			return
 		}
 
-		renderTemplate(s, w, "post", p.Title, templatePost{Post: *p})
+		renderTemplate(s, w, "post", p.Title+" | note.comame.xyz", templatePost{Post: *p})
 	})
 
 	http.HandleFunc("GET /manage/posts", func(w http.ResponseWriter, r *http.Request) {
@@ -322,7 +322,7 @@ func Start() {
 			return
 		}
 
-		renderTemplate(s, w, "post", p.Title, templatePost{Post: *p})
+		renderTemplate(s, w, "post", p.Title+" | note.comame.xyz", templatePost{Post: *p})
 	})
 
 	http.HandleFunc("GET /posts/public/{url_key}", func(w http.ResponseWriter, r *http.Request) {
@@ -350,7 +350,7 @@ func Start() {
 			return
 		}
 
-		renderTemplate(s, w, templateNamePost, p.Title, templatePost{Post: *p})
+		renderTemplate(s, w, templateNamePost, p.Title+" | note.comame.xyz", templatePost{Post: *p})
 	})
 
 	http.HandleFunc("GET /static/", func(w http.ResponseWriter, r *http.Request) {
