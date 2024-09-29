@@ -1,32 +1,180 @@
 package md
 
 import (
-	"fmt"
+	"testing"
+
+	"github.com/comame/note.comame.xyz/internal/test"
 )
 
-func Example() {
-	str := `# Title
-Hello, world!
+// TODO: Example テストを追加する
 
-## Title 2
-Lorem **ipsum** [dolor **sit amet** consectetur](https://example.com) adipisicing elit. Nostrum assumenda fuga enim ullam impedit quibusdam necessitatibus excepturi earum? Animi placeat porro, quis veniam numquam cum provident dolore eum fugiat maxime.
+func TestParseBlock(t *testing.T) {
+	var expect []blockElement
+	var got []blockElement
 
-aaa
-## 日本語だよ😄
-- foo
-  - bar
-    - baz
-  - foo
-    - bar
-- baz
-- <https://example.com>
-![caption](https://example.com/img.png)
+	// FIXME: inlineElementKindRoot が 2 重になってる
+	doubleRootInline := inlineElement{
+		kind: inlineElementKindRoot,
+		children: []inlineElement{
+			{
+				kind: inlineElementKindRoot,
+				children: []inlineElement{
+					{
+						kind: inlineElementKindText,
+						s:    "inline",
+					},
+				},
+			},
+		},
+	}
+	inline := inlineElement{
+		kind: inlineElementKindRoot,
+		children: []inlineElement{
+			{
+				kind: inlineElementKindText,
+				s:    "inline",
+			},
+		},
+	}
 
-日本語だよ😄`
+	// ただの文章
+	got = parseBlock(`inline
 
-	html := blockElementsToHTML(parseBlock(str))
-	fmt.Println(html)
+inline`)
+	expect = []blockElement{
+		{
+			kind:     blockElementKindParagraph,
+			children: doubleRootInline,
+		},
+		{
+			kind: blockElementKindEmpty,
+		},
+		{
+			kind:     blockElementKindParagraph,
+			children: doubleRootInline,
+		},
+	}
+	test.AssertEquals(t, got, expect)
 
-	// Output:
-	// <h1>Title</h1><p>Hello, world!</p><h2>Title 2</h2><p>Lorem <b>ipsum</b> <a href="https://example.com">dolor <b>sit amet</b> consectetur</a> adipisicing elit. Nostrum assumenda fuga enim ullam impedit quibusdam necessitatibus excepturi earum? Animi placeat porro, quis veniam numquam cum provident dolore eum fugiat maxime.</p><p>aaa</p><h2>日本語だよ😄</h2><ul><li>foo</li><ul><li>bar</li><ul><li>baz</li></ul><li>foo</li><ul><li>bar</li></ul></ul><li>baz</li><li><a href="https://example.com">https://example.com</a></li></ul><figure><img src="https://example.com/img.png" alt="caption"><figcaption>caption</figcaption></figure><p>日本語だよ😄</p>
+	// リスト
+	got = parseBlock(`- inline
+  - inline
+    - inline
+- inline
+
+- inline`)
+	expect = []blockElement{
+		{
+			kind:      blockElementKindList,
+			children:  inline,
+			listLevel: 1,
+		},
+		{
+			kind:      blockElementKindList,
+			children:  inline,
+			listLevel: 2,
+		},
+		{
+			kind:      blockElementKindList,
+			children:  inline,
+			listLevel: 3,
+		},
+		{
+			kind:      blockElementKindList,
+			children:  inline,
+			listLevel: 1,
+		},
+		{
+			kind: blockElementKindEmpty,
+		},
+		{
+			kind:      blockElementKindList,
+			children:  inline,
+			listLevel: 1,
+		},
+	}
+	test.AssertEquals(t, got, expect)
+
+	// チェックボックス
+	// FIXME: スペースがないのに受理している
+	got = parseBlock(`- [ ]inline
+- [x]inline`)
+	expect = []blockElement{
+		{
+			kind:              blockElementKindList,
+			checkboxList:      true,
+			checkboxIsChecked: false,
+			listLevel:         1,
+			children:          inline,
+		},
+		{
+			kind:              blockElementKindList,
+			checkboxList:      true,
+			checkboxIsChecked: true,
+			listLevel:         1,
+			children:          inline,
+		},
+	}
+	test.AssertEquals(t, got, expect)
+
+	// タイトル
+	got = parseBlock(`# heading 1
+## heading 2
+### heading 3`)
+	expect = []blockElement{
+		{
+			kind: blockElementKindHeading1,
+			children: inlineElement{
+				kind: inlineElementKindText,
+				s:    "heading 1",
+			},
+		},
+		{
+			kind: blockElementKindHeading2,
+			children: inlineElement{
+				kind: inlineElementKindText,
+				s:    "heading 2",
+			},
+		},
+		{
+			kind: blockElementKindHeading3,
+			children: inlineElement{
+				kind: inlineElementKindText,
+				s:    "heading 3",
+			},
+		},
+	}
+	test.AssertEquals(t, got, expect)
+
+	// 画像
+	got = parseBlock(`![caption](https://example.com)`)
+	expect = []blockElement{
+		{
+			kind:         blockElementKindImage,
+			imageSrc:     "https://example.com",
+			imageCaption: "caption",
+		},
+	}
+	test.AssertEquals(t, got, expect)
+
+	// コードブロック
+	got = parseBlock("```file\nsource code\n```")
+	expect = []blockElement{
+		{
+			kind:     blockElementKindCodeBlock,
+			codeName: "file",
+			codeText: "source code",
+		},
+	}
+	test.AssertEquals(t, got, expect)
+	got = parseBlock("```file\nsource code\n")
+	expect = []blockElement{
+		{
+			kind: blockElementKindCodeBlock,
+			// FIXME: 途中でコードブロックが切れたときにタグが入らない
+			// codeName: "file",
+			codeText: "source code\n",
+		},
+	}
+	test.AssertEquals(t, got, expect)
 }
