@@ -1,5 +1,11 @@
 <link rel="stylesheet" href="/static/editor.css" />
 
+{{ if .IsDemo }}
+<meta name="is-demo" value="true" />
+{{ else }}
+<meta name="is-demo" value="false" />
+{{ end }}
+
 <form id="editor-root" method="POST" target="{{ html .SubmitTarget }}">
   <nav id="editor-tab">
     <ul>
