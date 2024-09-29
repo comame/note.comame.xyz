@@ -74,7 +74,7 @@ func TestBlockElementsToHTML(t *testing.T) {
 	})
 	test.AssertSame(t, got, expect)
 
-	expect = "<ul><li><input type='checkbox' checked>str</li><li><input type='checkbox'>str</li></ul>"
+	expect = "<ul><li><input type='checkbox' checked inert>str</li><li><input type='checkbox' inert>str</li></ul>"
 	got = blockElementsToHTML([]blockElement{
 		{
 			kind:              blockElementKindList,

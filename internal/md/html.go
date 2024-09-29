@@ -25,10 +25,10 @@ func blockElementsToHTML(elements []blockElement) string {
 		case blockElementKindList:
 			liStart := "<li>"
 			if elements[i].checkboxList && elements[i].checkboxIsChecked {
-				liStart = "<li><input type='checkbox' checked>"
+				liStart = "<li><input type='checkbox' checked inert>"
 			}
 			if elements[i].checkboxList && !elements[i].checkboxIsChecked {
-				liStart = "<li><input type='checkbox'>"
+				liStart = "<li><input type='checkbox' inert>"
 			}
 
 			if previousListLevel == elements[i].listLevel {
