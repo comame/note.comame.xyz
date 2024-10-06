@@ -6,8 +6,6 @@ import (
 	"github.com/comame/note.comame.xyz/internal/test"
 )
 
-// TODO: Example テストを追加する
-
 func TestParseBlock(t *testing.T) {
 	var expect []blockElement
 	var got []blockElement
