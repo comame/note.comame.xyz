@@ -22,6 +22,7 @@ func parseBlock(s string) []blockElement {
 	var codeBlockLines []string
 
 	var isDetails bool
+	var isCustomDetails bool
 	var isDetailsSummaryParsed bool
 	var detailsSummary string
 	var detailsContentLines []string
@@ -55,6 +56,26 @@ func parseBlock(s string) []blockElement {
 			}
 
 			codeBlockLines = append(codeBlockLines, l)
+			continue
+		}
+
+		if isDetails && isCustomDetails {
+			if l == ":::" {
+				ret = append(ret, blockElement{
+					kind:               blockElementDetails,
+					detailsSummary:     detailsSummary,
+					detailsContentHTML: ToHTML(strings.Join(detailsContentLines, "\n")),
+				})
+
+				isDetails = false
+				isCustomDetails = false
+				isDetailsSummaryParsed = false
+				detailsSummary = ""
+				detailsContentLines = nil
+				continue
+			}
+
+			detailsContentLines = append(detailsContentLines, l)
 			continue
 		}
 
@@ -103,6 +124,17 @@ func parseBlock(s string) []blockElement {
 			flush()
 
 			isDetails = true
+			continue
+		}
+
+		customDetailsPattern := regexp.MustCompile("^:::details (.+)$")
+		if m := customDetailsPattern.FindStringSubmatch(l); len(m) > 0 {
+			flush()
+
+			detailsSummary = m[1]
+
+			isDetails = true
+			isCustomDetails = true
 			continue
 		}
 

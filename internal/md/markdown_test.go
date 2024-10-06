@@ -215,4 +215,29 @@ Hello, world!`)
 		},
 	}
 	test.AssertEquals(t, got, expect)
+
+	// トグル (カスタム)
+	got = parseBlock(`:::details Summary
+Hello, world!
+- list
+- list
+:::`)
+	expect = []blockElement{
+		{
+			kind:               blockElementDetails,
+			detailsSummary:     "Summary",
+			detailsContentHTML: "<p>Hello, world!</p><ul><li>list</li><li>list</li></ul>",
+		},
+	}
+	test.AssertEquals(t, got, expect)
+	got = parseBlock(`:::details summary
+Hello, world!`)
+	expect = []blockElement{
+		{
+			kind:               blockElementDetails,
+			detailsSummary:     "summary",
+			detailsContentHTML: "<p>Hello, world!</p>",
+		},
+	}
+	test.AssertEquals(t, got, expect)
 }
