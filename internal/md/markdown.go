@@ -40,20 +40,20 @@ func parseBlock(s string) []blockElement {
 			}
 		}
 
-		if isCodeBlock && l == "```" {
-			isCodeBlock = false
-
-			ret = append(ret, blockElement{
-				kind:     blockElementKindCodeBlock,
-				codeText: strings.Join(codeBlockLines, "\n"),
-				codeName: codeBlockName,
-			})
-
-			codeBlockLines = nil
-			continue
-		}
-
 		if isCodeBlock {
+			if l == "```" {
+				isCodeBlock = false
+
+				ret = append(ret, blockElement{
+					kind:     blockElementKindCodeBlock,
+					codeText: strings.Join(codeBlockLines, "\n"),
+					codeName: codeBlockName,
+				})
+
+				codeBlockLines = nil
+				continue
+			}
+
 			codeBlockLines = append(codeBlockLines, l)
 			continue
 		}
