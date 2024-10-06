@@ -61,6 +61,12 @@ func blockElementsToHTML(elements []blockElement) string {
 		case blockElementKindEmpty:
 			// 空行が挟まれたとき、リストを分割できるようにするための疑似要素
 			// 実際には何も出力しない
+		case blockElementDetails:
+			detailsSummary := elements[i].detailsSummary
+			if detailsSummary == "" {
+				detailsSummary = "詳細"
+			}
+			ret += fmt.Sprintf("<details><summary>%s</summary>%s</details>", html.EscapeString(detailsSummary), elements[i].detailsContentHTML)
 		default:
 			panic("invalid blockElementKind")
 		}

@@ -177,4 +177,42 @@ inline`)
 		},
 	}
 	test.AssertEquals(t, got, expect)
+
+	// トグル (HTML)
+	got = parseBlock(`<details>
+<summary>Summary</summary>
+Hello, world!
+- list
+- list
+</details>`)
+	expect = []blockElement{
+		{
+			kind:               blockElementDetails,
+			detailsSummary:     "Summary",
+			detailsContentHTML: "<p>Hello, world!</p><ul><li>list</li><li>list</li></ul>",
+		},
+	}
+	test.AssertEquals(t, got, expect)
+	got = parseBlock(`<details>
+Hello, world!
+</details>`)
+	expect = []blockElement{
+		{
+			kind:               blockElementDetails,
+			detailsSummary:     "",
+			detailsContentHTML: "<p>Hello, world!</p>",
+		},
+	}
+	test.AssertEquals(t, got, expect)
+	got = parseBlock(`<details>
+<summary>summary</summary>
+Hello, world!`)
+	expect = []blockElement{
+		{
+			kind:               blockElementDetails,
+			detailsSummary:     "summary",
+			detailsContentHTML: "<p>Hello, world!</p>",
+		},
+	}
+	test.AssertEquals(t, got, expect)
 }

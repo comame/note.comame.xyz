@@ -4,13 +4,15 @@ type blockElement struct {
 	kind     blockElementKind
 	children inlineElement
 	// 1 or greater than 1
-	listLevel         int
-	imageSrc          string
-	imageCaption      string
-	codeName          string
-	codeText          string
-	checkboxList      bool
-	checkboxIsChecked bool
+	listLevel          int
+	imageSrc           string
+	imageCaption       string
+	codeName           string
+	codeText           string
+	checkboxList       bool
+	checkboxIsChecked  bool
+	detailsSummary     string
+	detailsContentHTML string
 }
 
 type blockElementKind int
@@ -25,6 +27,7 @@ const (
 	blockElementKindHeading3
 	// 空行が挟まれたとき、リストを分割できるようにするための疑似要素
 	blockElementKindEmpty
+	blockElementDetails
 )
 
 type inlineElementKind int

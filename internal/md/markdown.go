@@ -21,6 +21,11 @@ func parseBlock(s string) []blockElement {
 	var codeBlockName string
 	var codeBlockLines []string
 
+	var isDetails bool
+	var isDetailsSummaryParsed bool
+	var detailsSummary string
+	var detailsContentLines []string
+
 	for _, l := range strings.Split(s, "\n") {
 		// capture curr, ret
 		flush := func() {
@@ -53,6 +58,33 @@ func parseBlock(s string) []blockElement {
 			continue
 		}
 
+		if isDetails {
+			summaryPattern := regexp.MustCompile(`^<summary>(.+)<\/summary>$`)
+			if !isDetailsSummaryParsed {
+				if m := summaryPattern.FindStringSubmatch(l); len(m) > 0 {
+					detailsSummary = m[1]
+					isDetailsSummaryParsed = true
+					continue
+				}
+			}
+			if l == "</details>" {
+				ret = append(ret, blockElement{
+					kind:               blockElementDetails,
+					detailsSummary:     detailsSummary,
+					detailsContentHTML: ToHTML(strings.Join(detailsContentLines, "\n")),
+				})
+
+				isDetails = false
+				isDetailsSummaryParsed = false
+				detailsSummary = ""
+				detailsContentLines = nil
+				continue
+			}
+
+			detailsContentLines = append(detailsContentLines, l)
+			continue
+		}
+
 		// コードブロック中は Markdown として解釈してはならないので、ここより上で処理する必要がある
 		l = strings.TrimRightFunc(l, unicode.IsSpace)
 
@@ -64,6 +96,13 @@ func parseBlock(s string) []blockElement {
 
 			isCodeBlock = true
 			codeBlockLines = nil
+			continue
+		}
+
+		if l == "<details>" {
+			flush()
+
+			isDetails = true
 			continue
 		}
 
@@ -174,6 +213,14 @@ func parseBlock(s string) []blockElement {
 		ret = append(ret, blockElement{
 			kind:     blockElementKindCodeBlock,
 			codeText: strings.Join(codeBlockLines, "\n"),
+		})
+	}
+
+	if isDetails && len(detailsContentLines) > 0 {
+		ret = append(ret, blockElement{
+			kind:               blockElementDetails,
+			detailsSummary:     detailsSummary,
+			detailsContentHTML: ToHTML(strings.Join(detailsContentLines, "\n")),
 		})
 	}
 
