@@ -22,7 +22,6 @@ wasm: clean
 .PHONY: clean
 clean:
 	rm -rf out/*
-	rm -f internal/server/out
 	mkdir -p out/dist
 
 # Tests

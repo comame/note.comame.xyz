@@ -6,8 +6,6 @@ import (
 	"github.com/comame/note.comame.xyz/internal/test"
 )
 
-// TODO: Example テストを追加する
-
 func TestParseBlock(t *testing.T) {
 	var expect []blockElement
 	var got []blockElement
@@ -174,6 +172,69 @@ inline`)
 			// FIXME: 途中でコードブロックが切れたときにタグが入らない
 			// codeName: "file",
 			codeText: "source code\n",
+		},
+	}
+	test.AssertEquals(t, got, expect)
+
+	// トグル (HTML)
+	got = parseBlock(`<details>
+<summary>Summary</summary>
+Hello, world!
+- list
+- list
+</details>`)
+	expect = []blockElement{
+		{
+			kind:               blockElementDetails,
+			detailsSummary:     "Summary",
+			detailsContentHTML: "<p>Hello, world!</p><ul><li>list</li><li>list</li></ul>",
+		},
+	}
+	test.AssertEquals(t, got, expect)
+	got = parseBlock(`<details>
+Hello, world!
+</details>`)
+	expect = []blockElement{
+		{
+			kind:               blockElementDetails,
+			detailsSummary:     "",
+			detailsContentHTML: "<p>Hello, world!</p>",
+		},
+	}
+	test.AssertEquals(t, got, expect)
+	got = parseBlock(`<details>
+<summary>summary</summary>
+Hello, world!`)
+	expect = []blockElement{
+		{
+			kind:               blockElementDetails,
+			detailsSummary:     "summary",
+			detailsContentHTML: "<p>Hello, world!</p>",
+		},
+	}
+	test.AssertEquals(t, got, expect)
+
+	// トグル (カスタム)
+	got = parseBlock(`:::details Summary
+Hello, world!
+- list
+- list
+:::`)
+	expect = []blockElement{
+		{
+			kind:               blockElementDetails,
+			detailsSummary:     "Summary",
+			detailsContentHTML: "<p>Hello, world!</p><ul><li>list</li><li>list</li></ul>",
+		},
+	}
+	test.AssertEquals(t, got, expect)
+	got = parseBlock(`:::details summary
+Hello, world!`)
+	expect = []blockElement{
+		{
+			kind:               blockElementDetails,
+			detailsSummary:     "summary",
+			detailsContentHTML: "<p>Hello, world!</p>",
 		},
 	}
 	test.AssertEquals(t, got, expect)

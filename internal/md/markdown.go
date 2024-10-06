@@ -21,6 +21,12 @@ func parseBlock(s string) []blockElement {
 	var codeBlockName string
 	var codeBlockLines []string
 
+	var isDetails bool
+	var isCustomDetails bool
+	var isDetailsSummaryParsed bool
+	var detailsSummary string
+	var detailsContentLines []string
+
 	for _, l := range strings.Split(s, "\n") {
 		// capture curr, ret
 		flush := func() {
@@ -35,21 +41,68 @@ func parseBlock(s string) []blockElement {
 			}
 		}
 
-		if isCodeBlock && l == "```" {
-			isCodeBlock = false
+		if isCodeBlock {
+			if l == "```" {
+				isCodeBlock = false
 
-			ret = append(ret, blockElement{
-				kind:     blockElementKindCodeBlock,
-				codeText: strings.Join(codeBlockLines, "\n"),
-				codeName: codeBlockName,
-			})
+				ret = append(ret, blockElement{
+					kind:     blockElementKindCodeBlock,
+					codeText: strings.Join(codeBlockLines, "\n"),
+					codeName: codeBlockName,
+				})
 
-			codeBlockLines = nil
+				codeBlockLines = nil
+				continue
+			}
+
+			codeBlockLines = append(codeBlockLines, l)
 			continue
 		}
 
-		if isCodeBlock {
-			codeBlockLines = append(codeBlockLines, l)
+		if isDetails && isCustomDetails {
+			if l == ":::" {
+				ret = append(ret, blockElement{
+					kind:               blockElementDetails,
+					detailsSummary:     detailsSummary,
+					detailsContentHTML: ToHTML(strings.Join(detailsContentLines, "\n")),
+				})
+
+				isDetails = false
+				isCustomDetails = false
+				isDetailsSummaryParsed = false
+				detailsSummary = ""
+				detailsContentLines = nil
+				continue
+			}
+
+			detailsContentLines = append(detailsContentLines, l)
+			continue
+		}
+
+		if isDetails {
+			summaryPattern := regexp.MustCompile(`^<summary>(.+)<\/summary>$`)
+			if !isDetailsSummaryParsed {
+				if m := summaryPattern.FindStringSubmatch(l); len(m) > 0 {
+					detailsSummary = m[1]
+					isDetailsSummaryParsed = true
+					continue
+				}
+			}
+			if l == "</details>" {
+				ret = append(ret, blockElement{
+					kind:               blockElementDetails,
+					detailsSummary:     detailsSummary,
+					detailsContentHTML: ToHTML(strings.Join(detailsContentLines, "\n")),
+				})
+
+				isDetails = false
+				isDetailsSummaryParsed = false
+				detailsSummary = ""
+				detailsContentLines = nil
+				continue
+			}
+
+			detailsContentLines = append(detailsContentLines, l)
 			continue
 		}
 
@@ -64,6 +117,24 @@ func parseBlock(s string) []blockElement {
 
 			isCodeBlock = true
 			codeBlockLines = nil
+			continue
+		}
+
+		if l == "<details>" {
+			flush()
+
+			isDetails = true
+			continue
+		}
+
+		customDetailsPattern := regexp.MustCompile("^:::details (.+)$")
+		if m := customDetailsPattern.FindStringSubmatch(l); len(m) > 0 {
+			flush()
+
+			detailsSummary = m[1]
+
+			isDetails = true
+			isCustomDetails = true
 			continue
 		}
 
@@ -174,6 +245,14 @@ func parseBlock(s string) []blockElement {
 		ret = append(ret, blockElement{
 			kind:     blockElementKindCodeBlock,
 			codeText: strings.Join(codeBlockLines, "\n"),
+		})
+	}
+
+	if isDetails && len(detailsContentLines) > 0 {
+		ret = append(ret, blockElement{
+			kind:               blockElementDetails,
+			detailsSummary:     detailsSummary,
+			detailsContentHTML: ToHTML(strings.Join(detailsContentLines, "\n")),
 		})
 	}
 
