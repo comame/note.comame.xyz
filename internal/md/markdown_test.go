@@ -94,9 +94,8 @@ inline`)
 	test.AssertEquals(t, got, expect)
 
 	// チェックボックス
-	// FIXME: スペースがないのに受理している
-	got = parseBlock(`- [ ]inline
-- [x]inline`)
+	got = parseBlock(`- [ ] inline
+- [x] inline`)
 	expect = []blockElement{
 		{
 			kind:              blockElementKindList,
@@ -168,9 +167,8 @@ inline`)
 	got = parseBlock("```file\nsource code\n")
 	expect = []blockElement{
 		{
-			kind: blockElementKindCodeBlock,
-			// FIXME: 途中でコードブロックが切れたときにタグが入らない
-			// codeName: "file",
+			kind:     blockElementKindCodeBlock,
+			codeName: "file",
 			codeText: "source code\n",
 		},
 	}

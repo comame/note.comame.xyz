@@ -140,7 +140,7 @@ func parseBlock(s string) []blockElement {
 
 		// 簡単のため、リストのインデントは常にスペース2つとする
 		// checkboxList は有効な list なので、list より前に検証する必要がある
-		checkboxListPattern := regexp.MustCompile(`^((?:  )*)- \[([ x])\](.+)$`)
+		checkboxListPattern := regexp.MustCompile(`^((?:  )*)- \[([ x])\] (.+)$`)
 		if m := checkboxListPattern.FindStringSubmatch(l); len(m) > 0 {
 			flush()
 
@@ -197,7 +197,6 @@ func parseBlock(s string) []blockElement {
 			ret = append(ret, blockElement{
 				kind: k,
 				children: inlineElement{
-					// TODO: 実はここも inlineElement として解釈したほうがよい説？
 					kind: inlineElementKindText,
 					s:    title,
 				},
@@ -244,6 +243,7 @@ func parseBlock(s string) []blockElement {
 	if isCodeBlock && len(codeBlockLines) > 0 {
 		ret = append(ret, blockElement{
 			kind:     blockElementKindCodeBlock,
+			codeName: codeBlockName,
 			codeText: strings.Join(codeBlockLines, "\n"),
 		})
 	}
