@@ -323,7 +323,13 @@ func Start() {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		http.StripPrefix("/out/dist/", http.FileServer(http.Dir("out/dist"))).ServeHTTP(w, r)
+
+		h := http.FileServer(http.Dir("out/dist"))
+		if isCompressRequest(r) {
+			h = compressStaticHandler(http.Dir("out/dist"))
+		}
+
+		http.StripPrefix("/out/dist/", h).ServeHTTP(w, r)
 	})
 
 	http.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {

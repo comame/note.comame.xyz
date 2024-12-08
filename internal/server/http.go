@@ -1,11 +1,15 @@
 package server
 
 import (
+	"compress/gzip"
 	"encoding/json"
 	"errors"
 	"io"
+	"log"
+	"mime"
 	"net/http"
 	"os"
+	"path"
 	"strings"
 )
 
@@ -82,4 +86,39 @@ func renderInternalServerError(s *session, w http.ResponseWriter) {
 func renderNotFound(s *session, w http.ResponseWriter) {
 	w.WriteHeader(http.StatusNotFound)
 	renderTemplate(s, w, templateNameNotFound, "Not Found", nil)
+}
+
+func compressStaticHandler(d http.Dir) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Add("Content-Encoding", "gzip")
+		ct := mime.TypeByExtension(path.Ext(r.URL.Path))
+		w.Header().Add("Content-Type", ct)
+
+		f, err := d.Open(r.URL.Path)
+		if err != nil {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		defer f.Close()
+
+		gw, err := gzip.NewWriterLevel(w, gzip.BestSpeed)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			log.Println(err)
+			return
+		}
+		defer gw.Close()
+
+		if _, err := io.Copy(gw, f); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			log.Println(err)
+			return
+		}
+	})
+}
+
+func isCompressRequest(r *http.Request) bool {
+	e := path.Ext(r.URL.Path)
+
+	return e == ".wasm"
 }
