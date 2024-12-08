@@ -5,11 +5,13 @@ import (
 	"database/sql"
 	"errors"
 	"os"
+	"sync"
 )
 
 type connection struct {
-	db *sql.DB
-	tx *sql.Tx
+	db  *sql.DB
+	tx  *sql.Tx
+	txm sync.Mutex
 }
 
 var (
@@ -34,6 +36,9 @@ func GetConnection() (*connection, error) {
 }
 
 func (c *connection) Begin(ctx context.Context) error {
+	c.txm.Lock()
+	defer c.txm.Unlock()
+
 	if c.tx != nil {
 		return errAlreadyInTransaction
 	}
@@ -43,10 +48,14 @@ func (c *connection) Begin(ctx context.Context) error {
 		return err
 	}
 	c.tx = tx
+
 	return nil
 }
 
 func (c *connection) Rollback() error {
+	c.txm.Lock()
+	defer c.txm.Unlock()
+
 	if c.tx == nil {
 		return nil
 	}
@@ -59,6 +68,9 @@ func (c *connection) Rollback() error {
 }
 
 func (c *connection) Commit() error {
+	c.txm.Lock()
+	defer c.txm.Unlock()
+
 	if c.tx == nil {
 		return nil
 	}
@@ -71,6 +83,9 @@ func (c *connection) Commit() error {
 }
 
 func (c *connection) transactionGuard() error {
+	c.txm.Lock()
+	defer c.txm.Unlock()
+
 	if c.tx == nil {
 		return errNotInTransaction
 	}
