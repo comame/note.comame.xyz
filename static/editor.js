@@ -1,13 +1,6 @@
-import "/out/dist/wasm_exec.js";
+import { setCallback, onInput } from "/static/markdown_parser.js";
 
-const go = new Go();
-
-const { instance } = await WebAssembly.instantiateStreaming(
-  fetch("/out/dist/goapp.wasm"),
-  go.importObject
-);
-
-go.run(instance);
+/** エディタページ固有の処理 */
 
 const inputDiv = document.getElementById("input");
 const outputDiv = document.getElementById("output");
@@ -25,14 +18,17 @@ if (draft !== null && window.confirm("下書きを読み込みますか？")) {
   inputDiv.value = draft.text;
 }
 
-outputDiv.innerHTML = go_parseMarkdown(inputDiv.value);
+setCallback((html) => {
+  outputDiv.innerHTML = html;
+});
 
+onInput(inputDiv.value);
 inputDiv.addEventListener("input", (e) => {
+  // FIXME: 長い入力を渡したとき、イベントハンドラが空でも重たい...
   e.preventDefault();
-
   const fd = new FormData(form);
   saveDraftForCurrentPage(fd.get("title"), fd.get("input"));
-  outputDiv.innerHTML = go_parseMarkdown(inputDiv.value);
+  onInput(fd.get("input"));
 });
 
 tabEditorLink.addEventListener("click", (e) => {
