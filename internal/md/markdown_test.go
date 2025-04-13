@@ -35,7 +35,22 @@ func TestParseBlock(t *testing.T) {
 		},
 	}
 
-	// ただの文章
+	// 改行1つだけのパラグラフ
+	got = parseBlock(`inline
+inline`)
+	// FIXME: inlineElementKindRoot が 2 重になってる
+	expect = []blockElement{
+		{
+			kind: blockElementKindParagraph,
+			children: inlineElement{
+				kind:     inlineElementKindRoot,
+				children: []inlineElement{inline, inline},
+			},
+		},
+	}
+	test.AssertEquals(t, got, expect)
+
+	// 空行を挟んだパラグラフ
 	got = parseBlock(`inline
 
 inline`)

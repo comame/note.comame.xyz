@@ -231,6 +231,24 @@ func TestInlineElementTreeToHTML(t *testing.T) {
 		"Hello, world!",
 	)
 
+	test.AssertSame(t,
+		inlineElementToHTML(inlineElement{
+			kind: inlineElementKindRoot,
+			children: []inlineElement{
+				{
+					kind: inlineElementKindText,
+					s:    "foo",
+				},
+				{
+					kind: inlineElementKindText,
+					s:    "bar",
+				},
+			},
+		}),
+		// FIXME: 改行させる
+		"foo<br>bar",
+	)
+
 	// 太字
 	test.AssertSame(
 		t,
