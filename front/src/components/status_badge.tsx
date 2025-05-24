@@ -26,5 +26,5 @@ export default function StatusBadge({ status, inherit, size }: Props) {
     `components-status-badge size-${size} status-${status} ` +
     (inherit ? "inherit " : " ");
 
-  return <div className={className}>{status.toUpperCase()}</div>;
+  return <div className={className}>{label.toUpperCase()}</div>;
 }

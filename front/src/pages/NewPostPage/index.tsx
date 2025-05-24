@@ -1,5 +1,5 @@
 type pageData = {};
 
-export default function NewPostPage({ pageData }: { pageData: pageData }) {
+export default function NewPostPage({ pageData: _ }: { pageData: pageData }) {
   return <div>NewPostPage</div>;
 }
