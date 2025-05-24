@@ -10,19 +10,19 @@ import Header from "./components/header";
 import { getGlobalProps } from "./lib/props";
 
 function Page() {
-  const { Page: currentPage } = getGlobalProps();
+  const { Page: currentPage, PageData } = getGlobalProps();
 
   switch (currentPage) {
     case "TopPage":
-      return <TopPage />;
+      return <TopPage pageData={PageData} />;
     case "AllPostsPage":
-      return <AllPostsPage />;
+      return <AllPostsPage pageData={PageData} />;
     case "PostPage":
-      return <PostPage />;
+      return <PostPage pageData={PageData} />;
     case "NewPostPage":
-      return <NewPostPage />;
+      return <NewPostPage pageData={PageData} />;
     case "EditPostPage":
-      return <EditPostPage />;
+      return <EditPostPage pageData={PageData} />;
   }
 }
 

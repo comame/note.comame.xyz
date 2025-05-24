@@ -7,6 +7,7 @@ type globalProps = {
     Location: string;
   }[];
   Page: pages;
+  PageData: any;
 };
 
 type pages =
@@ -38,6 +39,7 @@ globalPropsCache = {
       Location: "#ccc",
     },
   ],
+  PageData: {},
 };
 
 export function getGlobalProps(): globalProps {
