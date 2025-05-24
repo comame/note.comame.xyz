@@ -11,7 +11,7 @@
 
   --breadcrumbs-gap: 4px;
   @media (pointer: coarse) {
-    --breadcrumbs-gap: 8px
+    --breadcrumbs-gap: 8px;
   }
 }
 
@@ -20,12 +20,16 @@
   position: sticky;
   top: 0;
   left: 0;
-  background-color: white;
+  background-color: #dcf1ff;
 }
 
 .components-header .primary {
   display: grid;
   grid-template-columns: 1fr max-content;
+
+  max-width: var(--max-page-width);
+  margin-right: auto;
+  margin-left: auto;
 
   height: var(--header-height);
   line-height: var(--header-height);
@@ -58,7 +62,7 @@
 }
 
 .components-header .wrapped {
-    display: none;
+  display: none;
 }
 .components-header .wrapped.show {
   display: none;
@@ -121,15 +125,15 @@
 }
 
 .components-header .primary-breadcrumbs {
-    @media (max-width: 550px) {
-        &::after {
-            content: '▼'
-        }
-
-        li:not(:last-child) {
-            display: none;
-        }
-
-        cursor: pointer;
+  @media (max-width: 550px) {
+    &::after {
+      content: "▼";
     }
+
+    li:not(:last-child) {
+      display: none;
+    }
+
+    cursor: pointer;
+  }
 }

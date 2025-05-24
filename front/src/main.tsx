@@ -8,16 +8,15 @@ import PostPage from "./pages/PostPage";
 import TopPage from "./pages/TopPage";
 import Header from "./components/header";
 import { getGlobalProps } from "./lib/props";
-import PostTable from "./components/post_table";
 
 function Page() {
-  const { Page: currentPage, PageData } = getGlobalProps();
+  const { Page: currentPage, PageData, IsLoggedIn } = getGlobalProps();
 
   switch (currentPage) {
     case "TopPage":
       return <TopPage pageData={PageData} />;
     case "AllPostsPage":
-      return <AllPostsPage pageData={PageData} />;
+      return <AllPostsPage pageData={PageData} isLoggedIn={IsLoggedIn} />;
     case "PostPage":
       return <PostPage pageData={PageData} />;
     case "NewPostPage":
@@ -39,32 +38,6 @@ function App() {
     <div>
       <Header isLoggedIn={IsLoggedIn} breadcrumbs={breadcrumbs} />
       <Page />
-
-      <PostTable
-        posts={[
-          {
-            urlKey: "foo",
-            createdDatetime: "2024-01-01 00:00:00",
-            updatedDatetime: "2025-01-01 00:00:00",
-            title: "タイトルだよ",
-            permission: "public",
-            permissionInherited: false,
-            text: "",
-            html: "",
-          },
-          {
-            urlKey: "foobar",
-            createdDatetime: "2024-01-01 00:00:00",
-            updatedDatetime: "2025-12-01 00:00:00",
-            title: "タイトルだよaaaaaaaaaaa",
-            permission: "public",
-            permissionInherited: false,
-            text: "",
-            html: "",
-          },
-        ]}
-        isLoggedIn={IsLoggedIn}
-      />
     </div>
   );
 }

@@ -24,7 +24,7 @@ globalPropsCache = {
   Title: "dummy title",
   IsLoggedIn: true,
   OgDescription: "test",
-  Page: "TopPage",
+  Page: "AllPostsPage",
   Breadcrumbs: [
     {
       Label: "AAA",
@@ -39,7 +39,30 @@ globalPropsCache = {
       Location: "#ccc",
     },
   ],
-  PageData: {},
+  PageData: {
+    posts: [
+      {
+        urlKey: "foo",
+        createdDatetime: "2024-01-01 00:00:00",
+        updatedDatetime: "2025-01-01 00:00:00",
+        title: "タイトルだよ",
+        permission: "public",
+        permissionInherited: false,
+        text: "",
+        html: "",
+      },
+      {
+        urlKey: "bar",
+        createdDatetime: "2024-01-01 00:00:00",
+        updatedDatetime: "2025-01-01 00:00:00",
+        title: "タイトルだよ",
+        permission: "public",
+        permissionInherited: false,
+        text: "",
+        html: "",
+      },
+    ],
+  },
 };
 
 export function getGlobalProps(): globalProps {
