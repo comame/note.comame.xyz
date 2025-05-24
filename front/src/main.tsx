@@ -8,6 +8,7 @@ import PostPage from "./pages/PostPage";
 import TopPage from "./pages/TopPage";
 import Header from "./components/header";
 import { getGlobalProps } from "./lib/props";
+import PostTable from "./components/post_table";
 
 function Page() {
   const { Page: currentPage, PageData } = getGlobalProps();
@@ -38,6 +39,32 @@ function App() {
     <div>
       <Header isLoggedIn={IsLoggedIn} breadcrumbs={breadcrumbs} />
       <Page />
+
+      <PostTable
+        posts={[
+          {
+            urlKey: "foo",
+            createdDatetime: "2024-01-01 00:00:00",
+            updatedDatetime: "2025-01-01 00:00:00",
+            title: "タイトルだよ",
+            permission: "public",
+            permissionInherited: false,
+            text: "",
+            html: "",
+          },
+          {
+            urlKey: "foobar",
+            createdDatetime: "2024-01-01 00:00:00",
+            updatedDatetime: "2025-12-01 00:00:00",
+            title: "タイトルだよaaaaaaaaaaa",
+            permission: "public",
+            permissionInherited: false,
+            text: "",
+            html: "",
+          },
+        ]}
+        isLoggedIn={IsLoggedIn}
+      />
     </div>
   );
 }

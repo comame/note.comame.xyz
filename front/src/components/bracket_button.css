@@ -36,7 +36,8 @@
   }
 
   a,
-  button {
+  button,
+  span.inert {
     display: inline-block;
     height: 100%;
     padding-left: var(--horizontal-padding);
@@ -47,6 +48,15 @@
 
     &:hover {
       text-decoration: underline;
+    }
+  }
+
+  span.inert {
+    cursor: default;
+    color: black;
+
+    &:hover {
+      text-decoration: none;
     }
   }
 }

@@ -1,0 +1,45 @@
+.components-post-table {
+    --row-height: 24px;
+    @media (pointer: coarse) {
+      --row-height: 32px;
+    }
+}
+
+.components-post-table {
+  box-sizing: border-box;
+  width: 100%;
+
+  tr {
+    display: grid;
+    grid-template-columns: 1fr 10ic;
+    padding-left: 16px;
+    padding-right: 16px;
+    height: var(--row-height);
+    line-height: var(--row-height);
+  }
+
+  &.is-logged-in tr {
+    grid-template-columns: 1fr 6ic 70px 8ic;
+  }
+
+  td {
+    padding-right: 4px;
+    padding-left: 4px;
+    text-align: center;
+
+    &.title {
+      text-align: left;
+      text-overflow: ellipsis;
+      overflow-x: hidden;
+      white-space: nowrap;
+    }
+  }
+
+  thead {
+    border-bottom: solid 1px black;
+  }
+
+  border-top: double 2px black;
+  border-bottom: solid 1px black;
+  border-collapse: collapse;
+}
