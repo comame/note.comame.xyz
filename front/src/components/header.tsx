@@ -1,11 +1,16 @@
 import { useState } from "react";
-import { getGlobalProps } from "../lib/props";
 import BracketButton from "./bracket_button";
 import "./header.css";
 
-export default function Header() {
-  const { IsLoggedIn } = getGlobalProps();
+type props = {
+  isLoggedIn: boolean;
+  breadcrumbs: {
+    label: string;
+    location: string;
+  }[];
+};
 
+export default function Header({ isLoggedIn, breadcrumbs }: props) {
   const navigationForLoggedInUser = [
     {
       label: "一覧",
@@ -40,21 +45,22 @@ export default function Header() {
         <Breadcrumbs
           primary
           onClick={() => setIsOpenSubHeader(!isOpenSubHeader)}
+          breadcrumbs={breadcrumbs}
         />
         <div className="nav wide">
-          {IsLoggedIn ? (
+          {isLoggedIn ? (
             <BracketButton values={navigationForLoggedInUser} />
           ) : (
             <BracketButton values={navigationForAnonymousUser} />
           )}
-          {IsLoggedIn ? (
+          {isLoggedIn ? (
             <BracketButton values={[logoutButton]} />
           ) : (
             <BracketButton values={[loginButton]} />
           )}
         </div>
         <div className="nav narrow">
-          {IsLoggedIn ? (
+          {isLoggedIn ? (
             <BracketButton values={[{ label: "新規作成", to: "/new" }]} />
           ) : (
             <BracketButton values={[loginButton]} />
@@ -66,9 +72,9 @@ export default function Header() {
           "wrapped wrapped-breadcrumbs " + (isOpenSubHeader ? "show" : "")
         }
       >
-        <Breadcrumbs primary={false} />
+        <Breadcrumbs primary={false} breadcrumbs={breadcrumbs} />
       </div>
-      {IsLoggedIn && (
+      {isLoggedIn && (
         <div
           className={"wrapped wrapped-nav " + (isOpenSubHeader ? "show" : "")}
         >
@@ -83,20 +89,24 @@ export default function Header() {
 function Breadcrumbs({
   primary,
   onClick,
+  breadcrumbs,
 }: {
   primary: boolean;
   onClick?: () => void;
+  breadcrumbs: {
+    label: string;
+    location: string;
+  }[];
 }) {
-  const { Breadcrumbs } = getGlobalProps();
   return (
     <div
       onClick={onClick}
       className={`${primary ? "primary-breadcrumbs" : "secondary"} breadcrumbs`}
     >
       <ul>
-        {Breadcrumbs.map((v) => (
-          <li key={v.Location}>
-            <a href={v.Location}>{v.Label}</a>
+        {breadcrumbs.map((v) => (
+          <li key={v.location}>
+            <a href={v.location}>{v.label}</a>
           </li>
         ))}
       </ul>

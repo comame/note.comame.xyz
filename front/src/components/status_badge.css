@@ -1,0 +1,28 @@
+.components-status-badge {
+    box-sizing: border-box;
+    display: inline-block;
+    font-family: 'monospace';
+    color: white;
+    font-size: 12px;
+    height: 16px;
+    line-height: 16px;
+    text-align: center;
+    border-radius: 4px;
+    width: 58px;
+    &.size-s {
+        width: 16px;
+    }
+
+    &.status-public {
+        background-color: #1ba819;
+    }
+    &.status-private {
+        background-color: #a82219;
+    }
+    &.status-url {
+        background-color: #21b6be;
+    }
+    &.inherit {
+        background-color: #818181;
+    }
+}

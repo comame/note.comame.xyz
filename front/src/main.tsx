@@ -27,9 +27,16 @@ function Page() {
 }
 
 function App() {
+  const { Breadcrumbs, IsLoggedIn } = getGlobalProps();
+
+  const breadcrumbs = Breadcrumbs.map((v) => ({
+    location: v.Location,
+    label: v.Label,
+  }));
+
   return (
     <div>
-      <Header />
+      <Header isLoggedIn={IsLoggedIn} breadcrumbs={breadcrumbs} />
       <Page />
     </div>
   );
