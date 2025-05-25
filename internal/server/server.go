@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"os"
@@ -88,7 +87,7 @@ func Start() {
 
 	// === ログイン専用 ===
 
-	http.HandleFunc("GET /post/new", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("GET /new", func(w http.ResponseWriter, r *http.Request) {
 		setCommonHeaders(w)
 		s, ok := validateRequest(true, r, kvs)
 		if !ok {
@@ -226,32 +225,6 @@ func Start() {
 	})
 
 	// === 誰でもアクセス可能 ===
-
-	http.HandleFunc("GET /editor/demo", func(w http.ResponseWriter, r *http.Request) {
-		setCommonHeaders(w)
-		s, ok := validateRequest(false, r, kvs)
-		if !ok {
-			renderBadRequest(nil, w)
-			return
-		}
-
-		f, err := os.Open("static/demo.md")
-		if err != nil {
-			renderInternalServerError(s, w)
-			return
-		}
-		defer f.Close()
-
-		c, err := io.ReadAll(f)
-		if err != nil {
-			renderInternalServerError(s, w)
-			return
-		}
-
-		log.Println(c)
-
-		renderTemplate(s, w, pageNewPost, "エディタ", struct{}{})
-	})
 
 	http.HandleFunc("GET /all", func(w http.ResponseWriter, r *http.Request) {
 		postListPage(w, r, kvs)

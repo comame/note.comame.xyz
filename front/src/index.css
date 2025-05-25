@@ -1,5 +1,10 @@
 :root {
   --max-page-width: 900px;
+
+  --header-height: 32px;
+  @media (pointer: coarse) {
+    --header-height: 48px;
+  }
 }
 
 body {

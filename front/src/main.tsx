@@ -35,10 +35,10 @@ function App() {
   }));
 
   return (
-    <div>
+    <>
       <Header isLoggedIn={IsLoggedIn} breadcrumbs={breadcrumbs} />
       <Page />
-    </div>
+    </>
   );
 }
 

@@ -5,6 +5,7 @@ import react from "@vitejs/plugin-react";
 export default defineConfig((env) => ({
   plugins: [react()],
   build: {
+    target: ["esnext"],
     outDir: "../out/front",
     emptyOutDir: true,
     sourcemap: env.mode === "development",
