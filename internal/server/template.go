@@ -33,6 +33,10 @@ type pageProps struct {
 	PagePropsJSON string `json:"-,omitempty"`
 }
 
+type allPostsPageData struct {
+	Posts []postForFront `json:"posts"`
+}
+
 func setupTemplate() *template.Template {
 	// TODO: フロントエンドが書き終わったらグローバル変数に移して、リクエストごとに回さなくてよくする
 	t := template.New("_")

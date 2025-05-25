@@ -2,6 +2,7 @@ import type { post } from "../lib/types";
 import BracketButton from "./bracket_button";
 import StatusBadge from "./status_badge";
 import "./post_table.css";
+import { useMediaQuery } from "../lib/useMediaQuery";
 
 type props = {
   posts: post[];
@@ -9,7 +10,7 @@ type props = {
 };
 
 export default function PostTable({ posts, isLoggedIn }: props) {
-  console.log(isLoggedIn);
+  const isMobile = useMediaQuery("(max-width: 550px");
 
   return (
     <table
@@ -17,44 +18,52 @@ export default function PostTable({ posts, isLoggedIn }: props) {
     >
       <thead>
         <tr>
-          <td className="title">タイトル</td>
-          <td>更新</td>
-          {isLoggedIn && <td></td>}
-          {isLoggedIn && <td></td>}
+          <div>
+            <td className="title">タイトル</td>
+            <td>更新</td>
+          </div>
+          <div>
+            {isLoggedIn && <td></td>}
+            {isLoggedIn && <td></td>}
+          </div>
         </tr>
       </thead>
       <tbody>
         {posts.map((post) => (
           <tr key={post.urlKey}>
-            <td className="title">{post.title}</td>
-            <td>{formatDate(post.updatedDatetime)}</td>
-            {isLoggedIn && (
-              <td>
-                <StatusBadge
-                  size="m"
-                  status={post.permission}
-                  inherit={post.permissionInherited}
-                />
-              </td>
-            )}
-            {isLoggedIn && (
-              <td>
-                <BracketButton
-                  values={[
-                    {
-                      label: "編集",
-                      to: "#",
-                    },
-                    {
-                      label: "削除",
-                      onClick: () => {
-                        console.log("削除");
+            <div>
+              <td className="title">{post.title}</td>
+              <td>{formatDate(post.updatedDatetime)}</td>
+            </div>
+            <div>
+              {isLoggedIn && (
+                <td>
+                  <StatusBadge
+                    size="m"
+                    status={post.permission}
+                    inherit={post.permissionInherited}
+                  />
+                </td>
+              )}
+              {isLoggedIn && (
+                <td>
+                  <BracketButton
+                    values={[
+                      {
+                        label: "編集",
+                        to: "#",
                       },
-                    },
-                  ]}
-                />
-              </td>
-            )}
+                      {
+                        label: "削除",
+                        onClick: () => {
+                          console.log("削除");
+                        },
+                      },
+                    ]}
+                  />
+                </td>
+              )}
+            </div>
           </tr>
         ))}
       </tbody>
