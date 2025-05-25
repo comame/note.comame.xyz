@@ -254,46 +254,7 @@ func Start() {
 	})
 
 	http.HandleFunc("GET /all", func(w http.ResponseWriter, r *http.Request) {
-		setCommonHeaders(w)
-		s, ok := validateRequest(false, r, kvs)
-		if !ok {
-			renderBadRequest(nil, w)
-			return
-		}
-
-		con, err := GetConnection()
-		if err != nil {
-			log.Println(err)
-			renderInternalServerError(s, w)
-			return
-		}
-
-		var p []post
-
-		if s.isLoggedIn() {
-			p, err = con.getAllPostsForAdmin(r.Context())
-			if err != nil {
-				log.Println(err)
-				renderInternalServerError(s, w)
-				return
-			}
-		} else {
-			p, err = con.getAllPostsForAnonymous(r.Context())
-			if err != nil {
-				log.Println(err)
-				renderInternalServerError(s, w)
-				return
-			}
-		}
-
-		var pf []postForFront
-		for _, v := range p {
-			pf = append(pf, v.toPostForFront())
-		}
-
-		renderTemplate(s, w, pageAllPosts, "記事一覧", allPostsPageData{
-			Posts: pf,
-		})
+		postListPage(w, r, kvs)
 	})
 
 	http.HandleFunc("GET /posts/unlisted/{url_key}", func(w http.ResponseWriter, r *http.Request) {
@@ -358,14 +319,7 @@ func Start() {
 	})
 
 	http.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
-		setCommonHeaders(w)
-		s, ok := validateRequest(false, r, kvs)
-		if !ok {
-			renderBadRequest(s, w)
-			return
-		}
-
-		renderTemplate(s, w, pageTop, "note.comame.xyz", struct{}{})
+		postListPage(w, r, kvs)
 	})
 
 	http.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
@@ -422,4 +376,47 @@ func postPage(w http.ResponseWriter, r *http.Request, s *session) {
 	}
 
 	renderTemplate(s, w, "post", p.Title+" | note.comame.xyz", struct{}{})
+}
+
+func postListPage(w http.ResponseWriter, r *http.Request, kvs *kvs) {
+	setCommonHeaders(w)
+	s, ok := validateRequest(false, r, kvs)
+	if !ok {
+		renderBadRequest(nil, w)
+		return
+	}
+
+	con, err := GetConnection()
+	if err != nil {
+		log.Println(err)
+		renderInternalServerError(s, w)
+		return
+	}
+
+	var p []post
+
+	if s.isLoggedIn() {
+		p, err = con.getAllPostsForAdmin(r.Context())
+		if err != nil {
+			log.Println(err)
+			renderInternalServerError(s, w)
+			return
+		}
+	} else {
+		p, err = con.getAllPostsForAnonymous(r.Context())
+		if err != nil {
+			log.Println(err)
+			renderInternalServerError(s, w)
+			return
+		}
+	}
+
+	var pf []postForFront
+	for _, v := range p {
+		pf = append(pf, v.toPostForFront())
+	}
+
+	renderTemplate(s, w, pageAllPosts, "記事一覧", allPostsPageData{
+		Posts: pf,
+	})
 }

@@ -2,7 +2,6 @@ import type { post } from "../lib/types";
 import BracketButton from "./bracket_button";
 import StatusBadge from "./status_badge";
 import "./post_table.css";
-import { useMediaQuery } from "../lib/useMediaQuery";
 
 type props = {
   posts: post[];
@@ -10,8 +9,6 @@ type props = {
 };
 
 export default function PostTable({ posts, isLoggedIn }: props) {
-  const isMobile = useMediaQuery("(max-width: 550px");
-
   return (
     <table
       className={`components-post-table ` + (isLoggedIn ? "is-logged-in" : "")}
@@ -56,7 +53,7 @@ export default function PostTable({ posts, isLoggedIn }: props) {
                       {
                         label: "削除",
                         onClick: () => {
-                          console.log("削除");
+                          deletePost(post.id);
                         },
                       },
                     ]}
@@ -82,4 +79,20 @@ function formatDate(datetime: string) {
   }
 
   return `${d.getMonth() + 1}月${d.getDate()}日`;
+}
+
+function deletePost(postID: string) {
+  if (!confirm("削除しますか")) {
+    return;
+  }
+
+  fetch("/delete/post/" + postID, {
+    method: "POST",
+  }).then((res) => {
+    if (!res.ok) {
+      return;
+    }
+
+    location.reload();
+  });
 }
