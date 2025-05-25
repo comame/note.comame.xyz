@@ -75,17 +75,17 @@ func isPageRequest(r *http.Request) bool {
 
 func renderBadRequest(s *session, w http.ResponseWriter) {
 	w.WriteHeader(http.StatusBadRequest)
-	renderTemplate(s, w, templateNameError, "エラー", templateError{Title: "Bad Request", Message: ""})
+	renderTemplate(s, w, pageNotFound, "エラー", nil)
 }
 
 func renderInternalServerError(s *session, w http.ResponseWriter) {
 	w.WriteHeader(http.StatusInternalServerError)
-	renderTemplate(s, w, templateNameError, "エラー", templateError{Title: "Internal Server Error", Message: ""})
+	renderTemplate(s, w, pageNotFound, "エラー", nil)
 }
 
 func renderNotFound(s *session, w http.ResponseWriter) {
 	w.WriteHeader(http.StatusNotFound)
-	renderTemplate(s, w, templateNameNotFound, "Not Found", nil)
+	renderTemplate(s, w, pageNotFound, "Not Found", nil)
 }
 
 func compressStaticHandler(d http.Dir) http.Handler {
