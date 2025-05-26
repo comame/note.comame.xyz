@@ -1,0 +1,28 @@
+.pages-post {
+  .post-html {
+    & > * {
+      margin: 16px;
+    }
+  }
+
+  #post {
+    .title {
+      margin: 16px;
+    }
+
+    .time {
+      margin: 16px;
+    }
+
+    .metadata-title {
+      h1.title {
+        display: inline-block;
+        line-height: 40px;
+      }
+
+      span {
+        vertical-align: super;
+      }
+    }
+  }
+}

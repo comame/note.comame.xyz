@@ -27,9 +27,11 @@ export default function PostTable({ posts, isLoggedIn }: props) {
       </thead>
       <tbody>
         {posts.map((post) => (
-          <tr key={post.urlKey}>
+          <tr key={post.url}>
             <div>
-              <td className="title">{post.title}</td>
+              <td className="title">
+                <a href={post.url}>{post.title}</a>
+              </td>
               <td>{formatDate(post.updatedDatetime)}</td>
             </div>
             <div>

@@ -348,7 +348,9 @@ func postPage(w http.ResponseWriter, r *http.Request, s *session) {
 		return
 	}
 
-	renderTemplate(s, w, "post", p.Title+" | note.comame.xyz", struct{}{})
+	renderTemplate(s, w, pagePost, p.Title+" | note.comame.xyz", postPageData{
+		Post: p.toPostForFront(),
+	})
 }
 
 func postListPage(w http.ResponseWriter, r *http.Request, kvs *kvs) {

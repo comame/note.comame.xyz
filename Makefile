@@ -3,7 +3,7 @@ build: static_files server
 
 .PHONY: run
 run: build
-	export $$(cat ./.env) && ./out/server
+	./out/server
 
 # Go App
 
@@ -14,14 +14,14 @@ server: static_files
 # Assets
 
 .PHONY: static_files
-static_files: wasm front
+static_files: clean wasm front
 
 .PHONY: front
-front: clean
+front: wasm
 	cd front && npm ci && npm run build
 
 .PHONY: wasm
-wasm: clean
+wasm:
 	cp "$$(go env GOROOT)/lib/wasm/wasm_exec.js" out/dist/wasm_exec.js
 	GOOS=js GOARCH=wasm go build -o out/dist/goapp.wasm .
 

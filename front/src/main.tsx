@@ -23,6 +23,8 @@ function Page() {
       return <NewPostPage pageData={PageData} />;
     case "EditPostPage":
       return <EditPostPage pageData={PageData} />;
+    default:
+      throw new Error(`未知のページ ${currentPage}`);
   }
 }
 

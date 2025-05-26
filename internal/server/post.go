@@ -22,7 +22,7 @@ type post struct {
 // FIXME: どう考えてもフロントエンドと統一したほうがいい
 type postForFront struct {
 	ID                  uint64     `json:"id"`
-	URLKey              string     `json:"urlKey"`
+	URL                 string     `json:"url"`
 	CreatedDatetime     string     `json:"createdDatetime"`
 	UpdatedDatetime     string     `json:"updatedDatetime"`
 	Title               string     `json:"title"`
@@ -53,7 +53,7 @@ func (p *post) toPostForFront() postForFront {
 
 	return postForFront{
 		ID:                  p.ID,
-		URLKey:              p.URLKey,
+		URL:                 p.getURL(),
 		CreatedDatetime:     p.CreatedDatetime,
 		UpdatedDatetime:     p.UpdatedDatetime,
 		Title:               p.Title,

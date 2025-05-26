@@ -2,7 +2,7 @@ export type permission = "public" | "private" | "url";
 
 export type post = {
   id: string;
-  urlKey: string;
+  url: string;
   createdDatetime: string;
   updatedDatetime: string;
   title: string;
