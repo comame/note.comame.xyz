@@ -90,4 +90,11 @@
     overflow-x: hidden;
     white-space: nowrap;
   }
+
+  .title a {
+    color: #0069c2;
+    &:visited {
+      color: #0069c2;
+    }
+  }
 }

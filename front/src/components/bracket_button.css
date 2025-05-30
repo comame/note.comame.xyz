@@ -6,13 +6,16 @@
 
   display: inline-block;
   height: 100%;
+  /* vertical-align: baseline; */
 
   &::before {
     content: "[";
+    /* vertical-align: baseline; */
   }
 
   &::after {
     content: "]";
+    /* vertical-align: baseline; */
   }
 
   .element:not(:last-child)::after {

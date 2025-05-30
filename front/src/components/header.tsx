@@ -1,6 +1,7 @@
 import { useState } from "react";
 import BracketButton from "./bracket_button";
 import "./header.css";
+import { useMediaQuery } from "../lib/useMediaQuery";
 
 type props = {
   isLoggedIn: boolean;
@@ -98,6 +99,8 @@ function Breadcrumbs({
     location: string;
   }[];
 }) {
+  const isNarrowWidth = useMediaQuery("(max-width: 550px)");
+
   return (
     <div
       onClick={onClick}
@@ -106,7 +109,9 @@ function Breadcrumbs({
       <ul>
         {breadcrumbs.map((v) => (
           <li key={v.location}>
-            <a href={v.location}>{v.label}</a>
+            <a href={v.location} inert={isNarrowWidth && primary}>
+              {v.label}
+            </a>
           </li>
         ))}
       </ul>

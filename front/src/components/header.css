@@ -1,9 +1,4 @@
 .components-header {
-  --header-height: 32px;
-  @media (pointer: coarse) {
-    --header-height: 48px;
-  }
-
   --edge-margin: 16px;
   @media (max-width: 550px) {
     --edge-margin: 8px;

@@ -18,11 +18,13 @@ function Page() {
     case "AllPostsPage":
       return <AllPostsPage pageData={PageData} isLoggedIn={IsLoggedIn} />;
     case "PostPage":
-      return <PostPage pageData={PageData} />;
+      return <PostPage pageData={PageData} isLoggedIn={IsLoggedIn} />;
     case "NewPostPage":
       return <NewPostPage pageData={PageData} />;
     case "EditPostPage":
       return <EditPostPage pageData={PageData} />;
+    default:
+      throw new Error(`未知のページ ${currentPage}`);
   }
 }
 
@@ -35,10 +37,10 @@ function App() {
   }));
 
   return (
-    <div>
+    <>
       <Header isLoggedIn={IsLoggedIn} breadcrumbs={breadcrumbs} />
       <Page />
-    </div>
+    </>
   );
 }
 

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"os"
@@ -88,7 +87,7 @@ func Start() {
 
 	// === ログイン専用 ===
 
-	http.HandleFunc("GET /post/new", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("GET /new", func(w http.ResponseWriter, r *http.Request) {
 		setCommonHeaders(w)
 		s, ok := validateRequest(true, r, kvs)
 		if !ok {
@@ -164,7 +163,9 @@ func Start() {
 
 		log.Println(p)
 
-		renderTemplate(s, w, pageEditPost, "記事を作成", struct{}{})
+		renderTemplate(s, w, pageEditPost, "記事を編集", editPostPageData{
+			Post: p.toPostForFront(),
+		})
 	})
 
 	http.HandleFunc("POST /edit/post/{post_id}", func(w http.ResponseWriter, r *http.Request) {
@@ -184,16 +185,24 @@ func Start() {
 		idStr := r.PathValue("post_id")
 		id, err := strconv.ParseUint(idStr, 10, 64)
 		if err != nil {
+			log.Println(err)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
-		if p.ID != id || p.URLKey == "" {
+		if p.ID != id {
+			log.Println(p.ID, id)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
-		p2, err := updatePost(r.Context(), p)
+		if err := updatePost(r.Context(), p); err != nil {
+			log.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		p2, err := getPostByID(r.Context(), id, p.Visibility)
 		if err != nil {
 			log.Println(err)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -227,73 +236,8 @@ func Start() {
 
 	// === 誰でもアクセス可能 ===
 
-	http.HandleFunc("GET /editor/demo", func(w http.ResponseWriter, r *http.Request) {
-		setCommonHeaders(w)
-		s, ok := validateRequest(false, r, kvs)
-		if !ok {
-			renderBadRequest(nil, w)
-			return
-		}
-
-		f, err := os.Open("static/demo.md")
-		if err != nil {
-			renderInternalServerError(s, w)
-			return
-		}
-		defer f.Close()
-
-		c, err := io.ReadAll(f)
-		if err != nil {
-			renderInternalServerError(s, w)
-			return
-		}
-
-		log.Println(c)
-
-		renderTemplate(s, w, pageNewPost, "エディタ", struct{}{})
-	})
-
 	http.HandleFunc("GET /all", func(w http.ResponseWriter, r *http.Request) {
-		setCommonHeaders(w)
-		s, ok := validateRequest(false, r, kvs)
-		if !ok {
-			renderBadRequest(nil, w)
-			return
-		}
-
-		con, err := GetConnection()
-		if err != nil {
-			log.Println(err)
-			renderInternalServerError(s, w)
-			return
-		}
-
-		var p []post
-
-		if s.isLoggedIn() {
-			p, err = con.getAllPostsForAdmin(r.Context())
-			if err != nil {
-				log.Println(err)
-				renderInternalServerError(s, w)
-				return
-			}
-		} else {
-			p, err = con.getAllPostsForAnonymous(r.Context())
-			if err != nil {
-				log.Println(err)
-				renderInternalServerError(s, w)
-				return
-			}
-		}
-
-		var pf []postForFront
-		for _, v := range p {
-			pf = append(pf, v.toPostForFront())
-		}
-
-		renderTemplate(s, w, pageAllPosts, "記事一覧", allPostsPageData{
-			Posts: pf,
-		})
+		postListPage(w, r, kvs)
 	})
 
 	http.HandleFunc("GET /posts/unlisted/{url_key}", func(w http.ResponseWriter, r *http.Request) {
@@ -358,14 +302,7 @@ func Start() {
 	})
 
 	http.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
-		setCommonHeaders(w)
-		s, ok := validateRequest(false, r, kvs)
-		if !ok {
-			renderBadRequest(s, w)
-			return
-		}
-
-		renderTemplate(s, w, pageTop, "note.comame.xyz", struct{}{})
+		postListPage(w, r, kvs)
 	})
 
 	http.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
@@ -406,7 +343,7 @@ func postPage(w http.ResponseWriter, r *http.Request, s *session) {
 
 	key := r.PathValue("url_key")
 
-	p, err := getPost(r.Context(), key, v)
+	p, err := getPostByURLKey(r.Context(), key, v)
 	if err != nil && errors.Is(err, errNotFound) {
 		renderNotFound(s, w)
 		return
@@ -421,5 +358,50 @@ func postPage(w http.ResponseWriter, r *http.Request, s *session) {
 		return
 	}
 
-	renderTemplate(s, w, "post", p.Title+" | note.comame.xyz", struct{}{})
+	renderTemplate(s, w, pagePost, p.Title+" | note.comame.xyz", postPageData{
+		Post: p.toPostForFront(),
+	})
+}
+
+func postListPage(w http.ResponseWriter, r *http.Request, kvs *kvs) {
+	setCommonHeaders(w)
+	s, ok := validateRequest(false, r, kvs)
+	if !ok {
+		renderBadRequest(nil, w)
+		return
+	}
+
+	con, err := GetConnection()
+	if err != nil {
+		log.Println(err)
+		renderInternalServerError(s, w)
+		return
+	}
+
+	var p []post
+
+	if s.isLoggedIn() {
+		p, err = con.getAllPostsForAdmin(r.Context())
+		if err != nil {
+			log.Println(err)
+			renderInternalServerError(s, w)
+			return
+		}
+	} else {
+		p, err = con.getAllPostsForAnonymous(r.Context())
+		if err != nil {
+			log.Println(err)
+			renderInternalServerError(s, w)
+			return
+		}
+	}
+
+	var pf []postForFront
+	for _, v := range p {
+		pf = append(pf, v.toPostForFront())
+	}
+
+	renderTemplate(s, w, pageAllPosts, "記事一覧", allPostsPageData{
+		Posts: pf,
+	})
 }
