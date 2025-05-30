@@ -227,7 +227,9 @@ func parseBlock(s string) []blockElement {
 			continue
 		}
 
-		curr.children = append(curr.children, parseInlineTree(l))
+		// parseInlineTree() の返り値は必ず inlineElementKindRoot になるが、
+		// curr.kind も常に inlineElementKindRoot なので、2重になってしまうのを避ける
+		curr.children = append(curr.children, parseInlineTree(l).children...)
 	}
 
 	if len(curr.children) > 0 {
@@ -235,9 +237,6 @@ func parseBlock(s string) []blockElement {
 			kind:     blockElementKindParagraph,
 			children: curr,
 		})
-		curr = inlineElement{
-			kind: inlineElementKindRoot,
-		}
 	}
 
 	if isCodeBlock && len(codeBlockLines) > 0 {

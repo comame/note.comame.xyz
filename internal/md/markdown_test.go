@@ -10,21 +10,6 @@ func TestParseBlock(t *testing.T) {
 	var expect []blockElement
 	var got []blockElement
 
-	// FIXME: inlineElementKindRoot が 2 重になってる
-	doubleRootInline := inlineElement{
-		kind: inlineElementKindRoot,
-		children: []inlineElement{
-			{
-				kind: inlineElementKindRoot,
-				children: []inlineElement{
-					{
-						kind: inlineElementKindText,
-						s:    "inline",
-					},
-				},
-			},
-		},
-	}
 	inline := inlineElement{
 		kind: inlineElementKindRoot,
 		children: []inlineElement{
@@ -38,13 +23,21 @@ func TestParseBlock(t *testing.T) {
 	// 改行1つだけのパラグラフ
 	got = parseBlock(`inline
 inline`)
-	// FIXME: inlineElementKindRoot が 2 重になってる
 	expect = []blockElement{
 		{
 			kind: blockElementKindParagraph,
 			children: inlineElement{
-				kind:     inlineElementKindRoot,
-				children: []inlineElement{inline, inline},
+				kind: inlineElementKindRoot,
+				children: []inlineElement{
+					{
+						kind: inlineElementKindText,
+						s:    "inline",
+					},
+					{
+						kind: inlineElementKindText,
+						s:    "inline",
+					},
+				},
 			},
 		},
 	}
@@ -57,14 +50,14 @@ inline`)
 	expect = []blockElement{
 		{
 			kind:     blockElementKindParagraph,
-			children: doubleRootInline,
+			children: inline,
 		},
 		{
 			kind: blockElementKindEmpty,
 		},
 		{
 			kind:     blockElementKindParagraph,
-			children: doubleRootInline,
+			children: inline,
 		},
 	}
 	test.AssertEquals(t, got, expect)
