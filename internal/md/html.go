@@ -82,8 +82,21 @@ func blockElementsToHTML(elements []blockElement) string {
 
 func inlineElementToHTML(tree inlineElement) string {
 	c := ""
+
+	isPreviousKindText := false
 	for _, v := range tree.children {
+		// inlineElementKindTextが連続していたら改行を挟む
+		if isPreviousKindText && v.kind == inlineElementKindText {
+			c += "<br>"
+		}
+
 		c += inlineElementToHTML(v)
+
+		if v.kind == inlineElementKindText {
+			isPreviousKindText = true
+		} else {
+			isPreviousKindText = false
+		}
 	}
 
 	switch tree.kind {

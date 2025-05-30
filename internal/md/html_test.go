@@ -245,7 +245,6 @@ func TestInlineElementTreeToHTML(t *testing.T) {
 				},
 			},
 		}),
-		// FIXME: 改行させる
 		"foo<br>bar",
 	)
 
