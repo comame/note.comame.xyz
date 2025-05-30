@@ -25,7 +25,7 @@ function Page() {
     case "EditPostPage":
       return <EditPostPage pageData={PageData} />;
     case "DemoEditorPage":
-      return <DemoEditorPage pageData={PageData} />;
+      return <DemoEditorPage />;
     default:
       throw new Error(`未知のページ ${currentPage}`);
   }
