@@ -1,6 +1,8 @@
 package md
 
 import (
+	_ "embed"
+	"fmt"
 	"testing"
 
 	"github.com/comame/note.comame.xyz/internal/test"
@@ -247,4 +249,16 @@ Hello, world!`)
 		},
 	}
 	test.AssertEquals(t, got, expect)
+}
+
+//go:embed spec.md
+var specMD string
+
+func ExampleToHTML() {
+	html := ToHTML(specMD)
+
+	fmt.Println(html)
+	// Output:
+	// <h1>見出し1</h1><h2>見出し2</h2><h3>見出し3</h3><h2>リスト</h2><ul><li>リスト</li><ul><li>リスト</li><ul><li>リスト</li></ul></ul><li>リスト</li></ul><ul><li>空行を挟むと別のリストとして扱われる</li></ul><ul><li><input type='checkbox' inert>チェックボックス</li><li><input type='checkbox' checked inert>チェックボックス</li></ul><h2>段落</h2><p>通常の Markdown とは異なり、<br>行末の改行は無視されない。</p><p>空行をあけると別の段落として扱われる。</p><h2>コードブロック</h2><pre><code>Lorem ipsum
+	// - コードブロック内では Markdown として解釈されない</code></pre><h2>インライン要素</h2><p><b>太字</b> <code>インラインコード</code> <a href="https://example.com">link</a> <a href="https://example.com">https://example.com</a></p><p><a href="https://example.com">l<code>i</code><b>n</b>k</a> のように、組み合わせることもできる</p><h2>拡張構文</h2><details><summary>サマリ</summary><p>内容は格納される</p></details>
 }
