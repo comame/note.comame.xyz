@@ -8,6 +8,7 @@ import PostPage from "./pages/PostPage";
 import TopPage from "./pages/TopPage";
 import Header from "./components/header";
 import { getGlobalProps } from "./lib/props";
+import DemoEditorPage from "./pages/DemoEditorPage";
 
 function Page() {
   const { Page: currentPage, PageData, IsLoggedIn } = getGlobalProps();
@@ -23,6 +24,8 @@ function Page() {
       return <NewPostPage pageData={PageData} />;
     case "EditPostPage":
       return <EditPostPage pageData={PageData} />;
+    case "DemoEditorPage":
+      return <DemoEditorPage pageData={PageData} />;
     default:
       throw new Error(`未知のページ ${currentPage}`);
   }

@@ -1,0 +1,16 @@
+html:has(.pages-demo-editor) {
+  height: 100%;
+}
+
+body:has(.pages-demo-editor) {
+  height: 100%;
+}
+
+#root:has(.pages-demo-editor) {
+  height: calc(100% - var(--header-height) - 1px);
+}
+
+.pages-demo-editor {
+  width: 100%;
+  height: 100%;
+}

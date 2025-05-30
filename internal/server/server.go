@@ -1,6 +1,7 @@
 package server
 
 import (
+	_ "embed"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -238,6 +239,17 @@ func Start() {
 
 	http.HandleFunc("GET /all", func(w http.ResponseWriter, r *http.Request) {
 		postListPage(w, r, kvs)
+	})
+
+	http.HandleFunc("GET /editor/demo", func(w http.ResponseWriter, r *http.Request) {
+		setCommonHeaders(w)
+		s, ok := validateRequest(false, r, kvs)
+		if !ok {
+			renderBadRequest(nil, w)
+			return
+		}
+
+		renderTemplate(s, w, pageDemoEditor, "エディタ", nil)
 	})
 
 	http.HandleFunc("GET /posts/unlisted/{url_key}", func(w http.ResponseWriter, r *http.Request) {

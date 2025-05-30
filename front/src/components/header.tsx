@@ -27,6 +27,10 @@ export default function Header({ isLoggedIn, breadcrumbs }: props) {
       label: "一覧",
       to: "/all",
     },
+    {
+      label: "エディタ",
+      to: "/editor/demo",
+    },
   ];
 
   const loginButton = {
@@ -81,6 +85,13 @@ export default function Header({ isLoggedIn, breadcrumbs }: props) {
         >
           <BracketButton values={[{ label: "一覧", to: "/all" }]} />
           <BracketButton values={[logoutButton]} />
+        </div>
+      )}
+      {!isLoggedIn && (
+        <div
+          className={"wrapped wrapped-nav " + (isOpenSubHeader ? "show" : "")}
+        >
+          <BracketButton values={[{ label: "エディタ", to: "/editor/demo" }]} />
         </div>
       )}
     </div>
