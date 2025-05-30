@@ -277,6 +277,27 @@ func TestInlineElementTreeToHTML(t *testing.T) {
 		"<a href=\"https://example.com/example.html\"><b>Hello, world!</b></a>",
 	)
 
+	test.AssertSame(
+		t,
+		inlineElementToHTML(inlineElement{
+			kind: inlineElementKindRoot,
+			children: []inlineElement{
+				{
+					kind: inlineElementKindText,
+					s:    "line",
+				},
+				{
+					kind: inlineElementKindBreak,
+				},
+				{
+					kind: inlineElementKindText,
+					s:    "line",
+				},
+			},
+		}),
+		"line<br>line",
+	)
+
 	// 複数
 	test.AssertSame(
 		t,

@@ -82,6 +82,7 @@ func blockElementsToHTML(elements []blockElement) string {
 
 func inlineElementToHTML(tree inlineElement) string {
 	c := ""
+
 	for _, v := range tree.children {
 		c += inlineElementToHTML(v)
 	}
@@ -97,6 +98,8 @@ func inlineElementToHTML(tree inlineElement) string {
 		return "<code>" + c + "</code>"
 	case inlineElementKindLink:
 		return fmt.Sprintf("<a href=\"%s\">%s</a>", html.EscapeString(tree.linkHref), c)
+	case inlineElementKindBreak:
+		return "<br>"
 	}
 
 	panic("unknown inlineElementKind")

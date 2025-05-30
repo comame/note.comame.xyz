@@ -11,8 +11,8 @@ func AssertEquals[T any](t *testing.T, got, expect T) {
 		return
 	}
 
-	log.Printf("got    %v", got)
-	log.Printf("expect %v", expect)
+	log.Printf("got    %+v", got)
+	log.Printf("expect %+v", expect)
 	t.Fail()
 }
 

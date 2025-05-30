@@ -38,6 +38,7 @@ const (
 	inlineElementKindBold
 	inlineElementKindCode
 	inlineElementKindLink
+	inlineElementKindBreak
 )
 
 type inlineElement struct {

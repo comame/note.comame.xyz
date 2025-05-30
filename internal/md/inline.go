@@ -76,6 +76,10 @@ func tokenize(str string) []token {
 			flush()
 			ret = append(ret, token{r: true, s: "`"})
 			continue
+		case "\n":
+			flush()
+			ret = append(ret, token{r: true, s: "\n"})
+			continue
 		}
 
 		switch takeTwo() {
@@ -239,6 +243,15 @@ func parseTokens(tree inlineElement, tokens []token) inlineElement {
 			)
 
 			i += i3 - i
+			continue
+		}
+
+		if t.r && t.s == "\n" {
+			tree.children = append(tree.children,
+				inlineElement{
+					kind: inlineElementKindBreak,
+				},
+			)
 			continue
 		}
 
