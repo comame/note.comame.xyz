@@ -15,6 +15,7 @@ type pages =
   | "NewPostPage"
   | "EditPostPage"
   | "PostPage"
+  | "DemoEditorPage"
   | "NotFoundPage";
 
 let globalPropsCache: globalProps | null = null;

@@ -16,12 +16,13 @@ type breadcrumb struct {
 type page string
 
 const (
-	pageTop      page = "TopPage"
-	pageAllPosts page = "AllPostsPage"
-	pageNewPost  page = "NewPostPage"
-	pageEditPost page = "EditPostPage"
-	pagePost     page = "PostPage"
-	pageNotFound page = "NotFoundPage"
+	pageTop        page = "TopPage"
+	pageAllPosts   page = "AllPostsPage"
+	pageNewPost    page = "NewPostPage"
+	pageEditPost   page = "EditPostPage"
+	pagePost       page = "PostPage"
+	pageDemoEditor page = "DemoEditorPage"
+	pageNotFound   page = "NotFoundPage"
 )
 
 type pageProps struct {

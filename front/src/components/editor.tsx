@@ -11,9 +11,10 @@ interface props {
     permission: permission;
     id: string;
   };
+  demoMode?: boolean;
 }
 
-export default function Editor({ onSubmit, editPost }: props) {
+export default function Editor({ onSubmit, editPost, demoMode }: props) {
   const [text, setText] = useState("");
   const [markdown, setMarkdown] = useState("");
 
@@ -38,6 +39,10 @@ export default function Editor({ onSubmit, editPost }: props) {
       id="editor-root"
       onSubmit={(e) => {
         stopPreventUnload();
+
+        if (demoMode) {
+          return;
+        }
         onSubmit(e);
       }}
       onChange={() => {
@@ -93,14 +98,16 @@ export default function Editor({ onSubmit, editPost }: props) {
         ></div>
       </div>
 
-      <div id="control">
-        <select name="visibility" defaultValue={defaultPermission}>
-          <option value="0">非公開</option>
-          <option value="1">限定公開</option>
-          <option value="2">公開</option>
-        </select>
-        <button id="submit">SAVE</button>
-      </div>
+      {!demoMode && (
+        <div id="control">
+          <select name="visibility" defaultValue={defaultPermission}>
+            <option value="0">非公開</option>
+            <option value="1">限定公開</option>
+            <option value="2">公開</option>
+          </select>
+          <button id="submit">SAVE</button>
+        </div>
+      )}
 
       {editPost && <input type="hidden" name="id" value={editPost.id} />}
     </form>
