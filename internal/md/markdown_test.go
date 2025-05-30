@@ -34,6 +34,9 @@ inline`)
 						s:    "inline",
 					},
 					{
+						kind: inlineElementKindBreak,
+					},
+					{
 						kind: inlineElementKindText,
 						s:    "inline",
 					},

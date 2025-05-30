@@ -48,6 +48,14 @@ func TestTokenize(t *testing.T) {
 	got = tokenize("日本語だよ😄")
 	expect = []token{{s: "日本語だよ😄"}}
 	test.AssertEquals(t, got, expect)
+
+	got = tokenize("line\nline")
+	expect = []token{
+		{s: "line"},
+		{r: true, s: "\n"},
+		{s: "line"},
+	}
+	test.AssertEquals(t, got, expect)
 }
 
 func TestParseTokens(t *testing.T) {
@@ -379,6 +387,35 @@ func TestParseTokens(t *testing.T) {
 							},
 						},
 					},
+				},
+			},
+		},
+	)
+
+	// 改行
+	test.AssertEquals(
+		t,
+		parseTokens(
+			inlineElement{kind: inlineElementKindRoot},
+			[]token{
+				{s: "line"},
+				{r: true, s: "\n"},
+				{s: "line"},
+			},
+		),
+		inlineElement{
+			kind: inlineElementKindRoot,
+			children: []inlineElement{
+				{
+					kind: inlineElementKindText,
+					s:    "line",
+				},
+				{
+					kind: inlineElementKindBreak,
+				},
+				{
+					kind: inlineElementKindText,
+					s:    "line",
 				},
 			},
 		},

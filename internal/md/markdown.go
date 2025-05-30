@@ -13,9 +13,7 @@ func ToHTML(md string) string {
 func parseBlock(s string) []blockElement {
 	var ret []blockElement
 
-	curr := inlineElement{
-		kind: inlineElementKindRoot,
-	}
+	var paragraphBuffer string
 
 	var isCodeBlock bool
 	var codeBlockName string
@@ -28,16 +26,14 @@ func parseBlock(s string) []blockElement {
 	var detailsContentLines []string
 
 	for _, l := range strings.Split(s, "\n") {
-		// capture curr, ret
+		// バッファに溜まってる文字を通常の段落として書き出す
 		flush := func() {
-			if len(curr.children) > 0 {
+			if paragraphBuffer != "" {
 				ret = append(ret, blockElement{
 					kind:     blockElementKindParagraph,
-					children: curr,
+					children: parseInlineTree(paragraphBuffer),
 				})
-				curr = inlineElement{
-					kind: inlineElementKindRoot,
-				}
+				paragraphBuffer = ""
 			}
 		}
 
@@ -227,15 +223,16 @@ func parseBlock(s string) []blockElement {
 			continue
 		}
 
-		// parseInlineTree() の返り値は必ず inlineElementKindRoot になるが、
-		// curr.kind も常に inlineElementKindRoot なので、2重になってしまうのを避ける
-		curr.children = append(curr.children, parseInlineTree(l).children...)
+		if paragraphBuffer != "" {
+			paragraphBuffer += "\n"
+		}
+		paragraphBuffer += l
 	}
 
-	if len(curr.children) > 0 {
+	if paragraphBuffer != "" {
 		ret = append(ret, blockElement{
 			kind:     blockElementKindParagraph,
-			children: curr,
+			children: parseInlineTree(paragraphBuffer),
 		})
 	}
 
