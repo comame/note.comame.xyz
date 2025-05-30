@@ -163,7 +163,9 @@ func Start() {
 
 		log.Println(p)
 
-		renderTemplate(s, w, pageEditPost, "記事を作成", struct{}{})
+		renderTemplate(s, w, pageEditPost, "記事を編集", editPostPageData{
+			Post: p.toPostForFront(),
+		})
 	})
 
 	http.HandleFunc("POST /edit/post/{post_id}", func(w http.ResponseWriter, r *http.Request) {
@@ -183,16 +185,24 @@ func Start() {
 		idStr := r.PathValue("post_id")
 		id, err := strconv.ParseUint(idStr, 10, 64)
 		if err != nil {
+			log.Println(err)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
-		if p.ID != id || p.URLKey == "" {
+		if p.ID != id {
+			log.Println(p.ID, id)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
-		p2, err := updatePost(r.Context(), p)
+		if err := updatePost(r.Context(), p); err != nil {
+			log.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		p2, err := getPostByID(r.Context(), id, p.Visibility)
 		if err != nil {
 			log.Println(err)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -333,7 +343,7 @@ func postPage(w http.ResponseWriter, r *http.Request, s *session) {
 
 	key := r.PathValue("url_key")
 
-	p, err := getPost(r.Context(), key, v)
+	p, err := getPostByURLKey(r.Context(), key, v)
 	if err != nil && errors.Is(err, errNotFound) {
 		renderNotFound(s, w)
 		return

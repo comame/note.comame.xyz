@@ -20,7 +20,13 @@
         line-height: 40px;
       }
 
-      span {
+      .c-visibility {
+        vertical-align: super;
+      }
+
+      .edit-link {
+        display: inline-block;
+        margin-left: 8px;
         vertical-align: super;
       }
     }

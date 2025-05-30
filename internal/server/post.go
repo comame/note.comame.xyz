@@ -110,7 +110,30 @@ func (p *post) visibilityLabel() string {
 	panic("unknown visibility")
 }
 
-func getPost(ctx context.Context, urlKey string, visibility postVisibility) (*post, error) {
+func getPostByID(ctx context.Context, id uint64, visibility postVisibility) (*post, error) {
+	c, err := GetConnection()
+	if err != nil {
+		return nil, err
+	}
+
+	p, err := c.findPostByID(ctx, id)
+	if errors.Is(err, errNotFound) {
+		return nil, errNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	if visibility != p.Visibility {
+		return nil, errNotFound
+	}
+
+	p.HTML = md.ToHTML(p.Text)
+
+	return p, nil
+}
+
+func getPostByURLKey(ctx context.Context, urlKey string, visibility postVisibility) (*post, error) {
 	c, err := GetConnection()
 	if err != nil {
 		return nil, err
@@ -156,36 +179,36 @@ func createPost(ctx context.Context, p post) (*post, error) {
 	return &p, nil
 }
 
-func updatePost(ctx context.Context, p post) (*post, error) {
+func updatePost(ctx context.Context, p post) error {
 	if p.ID == 0 {
-		return nil, errIDIsZero
+		return errIDIsZero
 	}
 
 	con, err := GetConnection()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if err := con.Begin(ctx); err != nil {
-		return nil, err
+		return err
 	}
 	defer con.Rollback()
 
 	if err := con.copyPostToPostLogInTransaction(ctx, p.ID); err != nil {
-		return nil, err
+		return err
 	}
 
 	p.UpdatedDatetime = dateTimeNow()
 
 	if err := con.updatePostInTransaction(ctx, p); err != nil {
-		return nil, err
+		return err
 	}
 
 	if err := con.Commit(); err != nil {
-		return nil, err
+		return err
 	}
 
-	return &p, nil
+	return nil
 }
 
 func deletePost(ctx context.Context, postID uint64) error {

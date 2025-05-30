@@ -41,6 +41,10 @@ type postPageData struct {
 	Post postForFront `json:"post"`
 }
 
+type editPostPageData struct {
+	Post postForFront `json:"post"`
+}
+
 func setupTemplate() *template.Template {
 	// TODO: フロントエンドが書き終わったらグローバル変数に移して、リクエストごとに回さなくてよくする
 	t := template.New("_")

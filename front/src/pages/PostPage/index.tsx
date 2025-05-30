@@ -1,3 +1,4 @@
+import BracketButton from "../../components/bracket_button";
 import StatusBadge from "../../components/status_badge";
 import type { post } from "../../lib/types";
 import "./index.css";
@@ -6,10 +7,16 @@ type pageData = {
   post: post;
 };
 
-export default function PostPage({ pageData }: { pageData: pageData }) {
+export default function PostPage({
+  pageData,
+  isLoggedIn,
+}: {
+  pageData: pageData;
+  isLoggedIn: boolean;
+}) {
   const { post } = pageData;
 
-  console.log(post);
+  const editLink = `/edit/post/${post.id}`;
 
   return (
     <div className="pages-post">
@@ -19,6 +26,11 @@ export default function PostPage({ pageData }: { pageData: pageData }) {
           <span className="c-visibility">
             <StatusBadge size="m" status={post.permission} />
           </span>
+          {isLoggedIn && (
+            <span className="edit-link">
+              <BracketButton values={[{ label: "編集", to: editLink }]} />
+            </span>
+          )}
         </div>
         <ul className="time">
           <li>
