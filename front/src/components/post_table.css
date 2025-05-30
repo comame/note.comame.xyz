@@ -1,0 +1,93 @@
+.components-post-table {
+  --row-height: 32px;
+  @media (pointer: coarse) {
+    --row-height: 48px;
+  }
+}
+
+.components-post-table {
+  box-sizing: border-box;
+  width: 100%;
+  border-top: double 2px black;
+  border-bottom: solid 1px black;
+  border-collapse: collapse;
+
+  tr {
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: var(--row-height);
+
+    & > div:nth-child(1) {
+      display: grid;
+      grid-template-columns: 1fr 6ic;
+    }
+  }
+  &.is-logged-in tr {
+    grid-template-columns: 1fr calc(70px + 8ic);
+
+    & > div:nth-child(1) {
+      display: grid;
+      grid-template-columns: 1fr 6ic;
+    }
+    & > div:nth-child(2) {
+      display: grid;
+      grid-template-columns: 70px 8ic;
+    }
+  }
+  @media (max-width: 550px) {
+    &.is-logged-in tr {
+      grid-template-columns: 1fr;
+      grid-template-rows: repeat(2, var(--row-height));
+
+      & > div:nth-child(1) {
+        display: grid;
+        grid-template-columns: 1fr 6ic;
+      }
+      & > div:nth-child(2) {
+        display: grid;
+        grid-template-columns: 1fr 70px 8ic;
+        td:nth-child(1) {
+          grid-column: 2/3;
+        }
+        td:nth-child(2) {
+          grid-column: 3/4;
+        }
+        /* line-height: 32px; */
+      }
+    }
+    &.is-logged-in tr:not(:last-child) {
+      border-bottom: solid 1px black;
+    }
+  }
+
+  tr {
+    padding-left: 8px;
+    padding-right: 8px;
+    line-height: var(--row-height);
+  }
+
+  td {
+    padding-right: 4px;
+    padding-left: 4px;
+    text-align: center;
+    overflow-y: hidden;
+  }
+
+  thead {
+    border-bottom: solid 1px black;
+  }
+
+  /* ヘッダ行だけ高さ固定 */
+  thead tr {
+    height: 32px;
+    line-height: 32px;
+    background-color: #dcf1ff;
+  }
+
+  .title {
+    text-align: left;
+    text-overflow: ellipsis;
+    overflow-x: hidden;
+    white-space: nowrap;
+  }
+}

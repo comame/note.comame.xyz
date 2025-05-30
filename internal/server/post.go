@@ -19,6 +19,51 @@ type post struct {
 	HTML            string         `json:"-"`
 }
 
+// FIXME: どう考えてもフロントエンドと統一したほうがいい
+type postForFront struct {
+	ID                  uint64     `json:"id"`
+	URLKey              string     `json:"urlKey"`
+	CreatedDatetime     string     `json:"createdDatetime"`
+	UpdatedDatetime     string     `json:"updatedDatetime"`
+	Title               string     `json:"title"`
+	Text                string     `json:"text"`
+	HTML                string     `json:"html"`
+	Permission          permission `json:"permission"`
+	PermissionInherited bool       `json:"permissionInherited"`
+}
+
+type permission string
+
+const (
+	permissionPublic  permission = "public"
+	permissionPrivate permission = "private"
+	permissionURL     permission = "url"
+)
+
+func (p *post) toPostForFront() postForFront {
+	permission := permissionPrivate
+	switch p.Visibility {
+	case postVisibilityPublic:
+		permission = permissionPublic
+	case postVisibilityPrivate:
+		permission = permissionPrivate
+	case postVisibilityUnlisted:
+		permission = permissionURL
+	}
+
+	return postForFront{
+		ID:                  p.ID,
+		URLKey:              p.URLKey,
+		CreatedDatetime:     p.CreatedDatetime,
+		UpdatedDatetime:     p.UpdatedDatetime,
+		Title:               p.Title,
+		Text:                p.Text,
+		HTML:                p.HTML,
+		Permission:          permission,
+		PermissionInherited: false,
+	}
+}
+
 type postVisibility int
 
 const (

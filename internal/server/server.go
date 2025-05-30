@@ -96,9 +96,7 @@ func Start() {
 			return
 		}
 
-		renderTemplate(s, w, templateNameEditor, "記事を作成", templateEditor{
-			SubmitTarget: "/post/create",
-		})
+		renderTemplate(s, w, pageNewPost, "記事を作成", struct{}{})
 	})
 
 	http.HandleFunc("POST /post/create", func(w http.ResponseWriter, r *http.Request) {
@@ -136,31 +134,6 @@ func Start() {
 		postPage(w, r, s)
 	})
 
-	http.HandleFunc("GET /manage/posts", func(w http.ResponseWriter, r *http.Request) {
-		setCommonHeaders(w)
-		s, ok := validateRequest(true, r, kvs)
-		if !ok {
-			renderBadRequest(nil, w)
-			return
-		}
-
-		con, err := GetConnection()
-		if err != nil {
-			log.Println(err)
-			renderInternalServerError(s, w)
-			return
-		}
-
-		p, err := con.getPosts(r.Context())
-		if err != nil {
-			log.Println(err)
-			renderInternalServerError(s, w)
-			return
-		}
-
-		renderTemplate(s, w, templateNameManagePosts, "記事一覧", templateManagePosts{Posts: p})
-	})
-
 	http.HandleFunc("GET /edit/post/{post_id}", func(w http.ResponseWriter, r *http.Request) {
 		setCommonHeaders(w)
 		s, ok := validateRequest(true, r, kvs)
@@ -189,10 +162,9 @@ func Start() {
 			return
 		}
 
-		renderTemplate(s, w, templateNameEditor, "記事を作成", templateEditor{
-			SubmitTarget: "/edit/post/" + idStr,
-			Post:         *p,
-		})
+		log.Println(p)
+
+		renderTemplate(s, w, pageEditPost, "記事を作成", struct{}{})
 	})
 
 	http.HandleFunc("POST /edit/post/{post_id}", func(w http.ResponseWriter, r *http.Request) {
@@ -276,13 +248,51 @@ func Start() {
 			return
 		}
 
-		renderTemplate(s, w, templateNameEditor, "エディタ", templateEditor{
-			IsDemo: true,
-			Post: post{
-				Title:      "Demo",
-				Text:       string(c),
-				Visibility: postVisibilityPublic,
-			},
+		log.Println(c)
+
+		renderTemplate(s, w, pageNewPost, "エディタ", struct{}{})
+	})
+
+	http.HandleFunc("GET /all", func(w http.ResponseWriter, r *http.Request) {
+		setCommonHeaders(w)
+		s, ok := validateRequest(false, r, kvs)
+		if !ok {
+			renderBadRequest(nil, w)
+			return
+		}
+
+		con, err := GetConnection()
+		if err != nil {
+			log.Println(err)
+			renderInternalServerError(s, w)
+			return
+		}
+
+		var p []post
+
+		if s.isLoggedIn() {
+			p, err = con.getAllPostsForAdmin(r.Context())
+			if err != nil {
+				log.Println(err)
+				renderInternalServerError(s, w)
+				return
+			}
+		} else {
+			p, err = con.getAllPostsForAnonymous(r.Context())
+			if err != nil {
+				log.Println(err)
+				renderInternalServerError(s, w)
+				return
+			}
+		}
+
+		var pf []postForFront
+		for _, v := range p {
+			pf = append(pf, v.toPostForFront())
+		}
+
+		renderTemplate(s, w, pageAllPosts, "記事一覧", allPostsPageData{
+			Posts: pf,
 		})
 	})
 
@@ -332,6 +342,21 @@ func Start() {
 		http.StripPrefix("/out/dist/", h).ServeHTTP(w, r)
 	})
 
+	http.HandleFunc("GET /assets/", func(w http.ResponseWriter, r *http.Request) {
+		setCommonHeaders(w)
+		if _, ok := validateRequest(false, r, kvs); !ok {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		h := http.FileServer(http.Dir("out/front/assets"))
+		if isCompressRequest(r) {
+			h = compressStaticHandler(http.Dir("out/dist/assets"))
+		}
+
+		http.StripPrefix("/assets", h).ServeHTTP(w, r)
+	})
+
 	http.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
 		setCommonHeaders(w)
 		s, ok := validateRequest(false, r, kvs)
@@ -340,7 +365,7 @@ func Start() {
 			return
 		}
 
-		renderTemplate(s, w, templateNameTop, "note.comame.xyz", templateTop{})
+		renderTemplate(s, w, pageTop, "note.comame.xyz", struct{}{})
 	})
 
 	http.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
@@ -396,5 +421,5 @@ func postPage(w http.ResponseWriter, r *http.Request, s *session) {
 		return
 	}
 
-	renderTemplate(s, w, "post", p.Title+" | note.comame.xyz", templatePost{Post: *p, EditLink: fmt.Sprintf("/edit/post/%d", p.ID)})
+	renderTemplate(s, w, "post", p.Title+" | note.comame.xyz", struct{}{})
 }

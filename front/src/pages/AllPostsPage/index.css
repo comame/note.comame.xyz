@@ -1,0 +1,4 @@
+.page-all-posts {
+  margin: 16px auto;
+  max-width: var(--max-page-width);
+}

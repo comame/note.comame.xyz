@@ -1,0 +1,139 @@
+.components-header {
+  --header-height: 32px;
+  @media (pointer: coarse) {
+    --header-height: 48px;
+  }
+
+  --edge-margin: 16px;
+  @media (max-width: 550px) {
+    --edge-margin: 8px;
+  }
+
+  --breadcrumbs-gap: 4px;
+  @media (pointer: coarse) {
+    --breadcrumbs-gap: 8px;
+  }
+}
+
+.components-header {
+  border-bottom: solid 1px black;
+  position: sticky;
+  top: 0;
+  left: 0;
+  background-color: #dcf1ff;
+}
+
+.components-header .primary {
+  display: grid;
+  grid-template-columns: 1fr max-content;
+
+  max-width: var(--max-page-width);
+  margin-right: auto;
+  margin-left: auto;
+
+  height: var(--header-height);
+  line-height: var(--header-height);
+  padding-left: var(--edge-margin);
+  padding-right: var(--edge-margin);
+
+  .nav {
+    gap: 16px;
+    min-width: max-content;
+  }
+
+  .nav > * {
+    margin-left: 16px;
+  }
+
+  .nav.wide {
+    display: block;
+  }
+  .nav.narrow {
+    display: none;
+  }
+  @media (max-width: 550px) {
+    .nav.wide {
+      display: none;
+    }
+    .nav.narrow {
+      display: block;
+    }
+  }
+}
+
+.components-header .wrapped {
+  display: none;
+}
+.components-header .wrapped.show {
+  display: none;
+  height: var(--header-height);
+  line-height: var(--header-height);
+  padding-left: var(--edge-margin);
+  padding-right: var(--edge-margin);
+
+  @media (max-width: 550px) {
+    display: block;
+  }
+}
+
+.components-header .wrapped-breadcrumbs {
+  border-top: solid 1px black;
+}
+
+.components-header .wrapped-nav {
+  text-align: right;
+  min-width: max-content;
+
+  & > * {
+    margin-left: 16px;
+  }
+}
+
+.components-header .breadcrumbs {
+  overflow-x: auto;
+  white-space: nowrap;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  ul {
+    list-style: none;
+    display: inline-block;
+    padding: 0;
+    margin: 0;
+  }
+
+  li {
+    display: inline-block;
+    margin-right: var(--breadcrumbs-gap);
+  }
+  li:not(:last-child) {
+    &::after {
+      content: "/";
+      margin-left: var(--breadcrumbs-gap);
+    }
+  }
+  li:last-child {
+    a {
+      text-decoration: none;
+    }
+  }
+
+  a {
+    color: black;
+  }
+}
+
+.components-header .primary-breadcrumbs {
+  @media (max-width: 550px) {
+    &::after {
+      content: "▼";
+    }
+
+    li:not(:last-child) {
+      display: none;
+    }
+
+    cursor: pointer;
+  }
+}

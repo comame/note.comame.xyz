@@ -1,0 +1,85 @@
+import type { post } from "../lib/types";
+import BracketButton from "./bracket_button";
+import StatusBadge from "./status_badge";
+import "./post_table.css";
+import { useMediaQuery } from "../lib/useMediaQuery";
+
+type props = {
+  posts: post[];
+  isLoggedIn: boolean;
+};
+
+export default function PostTable({ posts, isLoggedIn }: props) {
+  const isMobile = useMediaQuery("(max-width: 550px");
+
+  return (
+    <table
+      className={`components-post-table ` + (isLoggedIn ? "is-logged-in" : "")}
+    >
+      <thead>
+        <tr>
+          <div>
+            <td className="title">タイトル</td>
+            <td>更新</td>
+          </div>
+          <div>
+            {isLoggedIn && <td></td>}
+            {isLoggedIn && <td></td>}
+          </div>
+        </tr>
+      </thead>
+      <tbody>
+        {posts.map((post) => (
+          <tr key={post.urlKey}>
+            <div>
+              <td className="title">{post.title}</td>
+              <td>{formatDate(post.updatedDatetime)}</td>
+            </div>
+            <div>
+              {isLoggedIn && (
+                <td>
+                  <StatusBadge
+                    size="m"
+                    status={post.permission}
+                    inherit={post.permissionInherited}
+                  />
+                </td>
+              )}
+              {isLoggedIn && (
+                <td>
+                  <BracketButton
+                    values={[
+                      {
+                        label: "編集",
+                        to: "#",
+                      },
+                      {
+                        label: "削除",
+                        onClick: () => {
+                          console.log("削除");
+                        },
+                      },
+                    ]}
+                  />
+                </td>
+              )}
+            </div>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+function formatDate(datetime: string) {
+  const d = new Date(datetime);
+
+  const now = Date.now();
+  const diff = now - d.getTime();
+
+  if (diff >= 1000 * 86400 * 330) {
+    return `${d.getFullYear}年`;
+  }
+
+  return `${d.getMonth() + 1}月${d.getDate()}日`;
+}

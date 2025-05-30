@@ -147,7 +147,45 @@ func (c *connection) createPost(ctx context.Context, post post) error {
 	return nil
 }
 
-func (c *connection) getPosts(ctx context.Context) ([]post, error) {
+func (c *connection) getAllPostsForAnonymous(ctx context.Context) ([]post, error) {
+	rows, err := c.db.QueryContext(ctx, `
+		SELECT
+			nt_post.id,
+			nt_post.url_key,
+			nt_post.created_datetime,
+			nt_post.updated_datetime,
+			nt_post.title,
+			nt_post.text,
+			nt_post.visibility
+		FROM nt_post
+		WHERE visibility = 2
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var p []post
+	for rows.Next() {
+		var post post
+		if err := rows.Scan(
+			&post.ID,
+			&post.URLKey,
+			&post.CreatedDatetime,
+			&post.UpdatedDatetime,
+			&post.Title,
+			&post.Text,
+			&post.Visibility,
+		); err != nil {
+			return nil, err
+		}
+		p = append(p, post)
+	}
+
+	return p, nil
+}
+
+func (c *connection) getAllPostsForAdmin(ctx context.Context) ([]post, error) {
 	rows, err := c.db.QueryContext(ctx, `
 		SELECT
 			nt_post.id,

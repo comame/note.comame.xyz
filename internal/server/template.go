@@ -1,52 +1,40 @@
 package server
 
 import (
-	"bytes"
-	"fmt"
+	"encoding/json"
+	"html"
 	"log"
 	"net/http"
 	"text/template"
 )
 
-type templateName string
+type breadcrumb struct {
+	Label    string
+	Location string
+}
+
+type page string
 
 const (
-	templateNameEditor      templateName = "editor"
-	templateNameError       templateName = "error"
-	templateNameManagePosts templateName = "manage-posts"
-	templateNameNotFound    templateName = "not-found"
-	templateNamePost        templateName = "post"
-	templateNameTop         templateName = "top"
+	pageTop      page = "TopPage"
+	pageAllPosts page = "AllPostsPage"
+	pageNewPost  page = "NewPostPage"
+	pageEditPost page = "EditPostPage"
+	pagePost     page = "PostPage"
+	pageNotFound page = "NotFoundPage"
 )
 
-type templateError struct {
-	Title   string
-	Message string
-}
-
-type templatePost struct {
-	Post       post
-	EditLink   string
-	IsLoggedIn bool
-}
-
-type templateEditor struct {
-	IsDemo       bool
-	SubmitTarget string
-	Post         post
-}
-
-type templateManagePosts struct {
-	Posts []post
-}
-
-type templateTop struct{}
-
-type templateApp struct {
-	Title         string
-	Body          string
+type pageProps struct {
 	IsLoggedIn    bool
-	OgDescription string
+	Breadcrumbs   []breadcrumb
+	Title         string
+	Page          page
+	PageData      any
+	PagePropsJSON string `json:"-,omitempty"`
+}
+
+type allPostsPageData struct {
+	Posts []postForFront `json:"posts"`
 }
 
 func setupTemplate() *template.Template {
@@ -74,34 +62,29 @@ func setupTemplate() *template.Template {
 	return t
 }
 
-func renderTemplate(s *session, w http.ResponseWriter, name templateName, title string, param any) {
+func renderTemplate(s *session, w http.ResponseWriter, name page, title string, pageData any) {
 	t := setupTemplate()
 
-	switch p := param.(type) {
-	case templatePost:
-		p.IsLoggedIn = s.isLoggedIn()
-		param = p
+	props := pageProps{
+		IsLoggedIn: s.isLoggedIn(),
+		Breadcrumbs: []breadcrumb{
+			{Label: "Top", Location: "/"},
+		},
+		Title:    html.EscapeString(title),
+		Page:     name,
+		PageData: pageData,
 	}
 
-	var b bytes.Buffer
-	if err := t.ExecuteTemplate(&b, string(name)+".html", param); err != nil {
-		log.Println(err)
+	pagePropsJSON, err := json.Marshal(props)
+	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	props.PagePropsJSON = html.EscapeString(string(pagePropsJSON))
 
-	ogDescription := "note.comame.xyz"
-	if name == templateNamePost {
-		p := param.(templatePost)
-		ogDescription = fmt.Sprintf("%d字", len(p.Post.Text))
-	}
-
-	if err := t.ExecuteTemplate(w, "app.html", templateApp{
-		Title:         title,
-		Body:          b.String(),
-		IsLoggedIn:    s.isLoggedIn(),
-		OgDescription: ogDescription,
-	}); err != nil {
-		panic(err)
+	if err := t.ExecuteTemplate(w, "app_index.html", props); err != nil {
+		log.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 }
