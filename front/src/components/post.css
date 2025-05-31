@@ -2,4 +2,12 @@
   & > * {
     margin: 16px;
   }
+
+  pre:has(code) {
+    background-color: rgb(238, 238, 238);
+  }
+
+  code {
+    background-color: rgb(238, 238, 238);
+  }
 }
