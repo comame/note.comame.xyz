@@ -6,6 +6,7 @@ import BracketButton from "./bracket_button";
 import Post from "./post";
 
 interface props {
+  // FIXME: 直接イベントを触っているのは明らかに不健全なのでなんとかしたい...
   onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
   editPost?: {
     title: string;
@@ -17,6 +18,11 @@ interface props {
 }
 
 export default function Editor({ onSubmit, editPost, demoMode }: props) {
+  const draftID = getDraftID(editPost, demoMode);
+  const draft = loadDraft(draftID);
+
+  const [text, setText] = useState(draft?.text ?? editPost?.text ?? "");
+  const [title, setTitle] = useState(draft?.title ?? editPost?.title ?? "");
   const [markdown, setMarkdown] = useState("");
 
   const [tab, setTab] = useState<"editor" | "preview">("editor");
@@ -41,6 +47,7 @@ export default function Editor({ onSubmit, editPost, demoMode }: props) {
         if (demoMode) {
           return;
         }
+        deleteDraftFromLocalHost(draftID);
         onSubmit(e);
       }}
       onChange={() => {
@@ -61,7 +68,11 @@ export default function Editor({ onSubmit, editPost, demoMode }: props) {
           id="title"
           name="title"
           placeholder="タイトル"
-          defaultValue={editPost?.title ?? undefined}
+          value={title}
+          onChange={(e) => {
+            setTitle(e.currentTarget.value);
+            saveDraft(e.currentTarget.value, text, draftID);
+          }}
           required
         />
         <textarea
@@ -69,11 +80,11 @@ export default function Editor({ onSubmit, editPost, demoMode }: props) {
           id="input"
           name="input"
           placeholder="本文"
-          // value={text}
-          defaultValue={editPost?.text ?? undefined}
+          value={text}
           onChange={async (e) => {
+            setText(e.currentTarget.value);
+            saveDraft(title, e.currentTarget.value, draftID);
             const md = e.currentTarget.value;
-            // setText(md);
             const parsed = await parse(md);
             setMarkdown(parsed);
           }}
@@ -113,4 +124,46 @@ function startPreventUnload() {
 
 function stopPreventUnload() {
   window.removeEventListener("beforeunload", beforeUnloadHandler);
+}
+
+function saveDraft(title: string, text: string, draftID: string | null) {
+  if (!draftID) {
+    return;
+  }
+
+  const key = `draft-${draftID}`;
+  localStorage.setItem(key, JSON.stringify({ title, text }));
+}
+
+function loadDraft(
+  draftID: string | null
+): { title: string; text: string } | null {
+  if (!draftID) {
+    return null;
+  }
+  const key = `draft-${draftID}`;
+  const draft = localStorage.getItem(key);
+  if (draft) {
+    return JSON.parse(draft);
+  }
+  return null;
+}
+
+function deleteDraftFromLocalHost(draftID: string | null) {
+  const key = `draft-${draftID}`;
+  localStorage.removeItem(key);
+}
+
+function getDraftID(
+  editPost?: { title: string; text: string; id: number } | undefined,
+  demoMode?: boolean
+): string | null {
+  if (demoMode) {
+    return null;
+  }
+  if (editPost) {
+    return "" + editPost.id;
+  } else {
+    return "new";
+  }
 }
