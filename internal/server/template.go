@@ -49,24 +49,6 @@ type editPostPageData struct {
 func setupTemplate() *template.Template {
 	// TODO: フロントエンドが書き終わったらグローバル変数に移して、リクエストごとに回さなくてよくする
 	t := template.New("_")
-	t.Funcs(map[string]any{
-		"toYMDString": func(datetime string) string {
-			l := len("2024-09-01")
-			if len(datetime) < l {
-				return datetime
-			}
-			return datetime[:l]
-		},
-		"postURL": func(p post) string {
-			return p.getURL()
-		},
-		"editURL": func(p post) string {
-			return p.editURL()
-		},
-		"visibilityLabel": func(p post) string {
-			return p.visibilityLabel()
-		},
-	})
 	template.Must(t.ParseGlob("templates/*.html"))
 	return t
 }
