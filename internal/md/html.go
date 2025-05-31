@@ -9,12 +9,17 @@ func blockElementsToHTML(elements []blockElement) string {
 	ret := ""
 
 	previousListLevel := 0
+	isInDescriptionList := false
 	for i := range len(elements) {
 		if elements[i].kind != blockElementKindList {
 			for previousListLevel > 0 {
 				previousListLevel--
 				ret += "</ul>"
 			}
+		}
+		if elements[i].kind != blockElementDescriptionListItem && isInDescriptionList {
+			ret += "</dl>"
+			isInDescriptionList = false
 		}
 
 		c := inlineElementToHTML(elements[i].children)
@@ -67,6 +72,12 @@ func blockElementsToHTML(elements []blockElement) string {
 				detailsSummary = "詳細"
 			}
 			ret += fmt.Sprintf("<details><summary>%s</summary>%s</details>", html.EscapeString(detailsSummary), elements[i].detailsContentHTML)
+		case blockElementDescriptionListItem:
+			if !isInDescriptionList {
+				ret += "<dl>"
+				isInDescriptionList = true
+			}
+			ret += fmt.Sprintf("<dt>%s</dt><dd>%s</dd>", html.EscapeString(elements[i].descriptionTerm), html.EscapeString(elements[i].descriptionDescription))
 		default:
 			panic("invalid blockElementKind")
 		}
@@ -75,6 +86,10 @@ func blockElementsToHTML(elements []blockElement) string {
 	for previousListLevel > 0 {
 		previousListLevel--
 		ret += "</ul>"
+	}
+
+	if isInDescriptionList {
+		ret += "</dl>"
 	}
 
 	return ret
