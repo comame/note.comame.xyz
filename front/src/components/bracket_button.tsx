@@ -25,7 +25,9 @@ export default function BracketButton({ values }: props) {
           {"to" in v ? (
             <a href={v.to}>{v.label}</a>
           ) : "onClick" in v ? (
-            <button onClick={v.onClick}>{v.label}</button>
+            <button type="button" onClick={v.onClick}>
+              {v.label}
+            </button>
           ) : (
             <span className="inert">{v.label}</span>
           )}

@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { parse } from "../lib/markdown";
 import "./editor.css";
 import type { permission } from "../lib/types";
+import BracketButton from "./bracket_button";
+import Post from "./post";
 
 interface props {
   onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
@@ -15,7 +17,6 @@ interface props {
 }
 
 export default function Editor({ onSubmit, editPost, demoMode }: props) {
-  const [text, setText] = useState("");
   const [markdown, setMarkdown] = useState("");
 
   const [tab, setTab] = useState<"editor" | "preview">("editor");
@@ -50,18 +51,12 @@ export default function Editor({ onSubmit, editPost, demoMode }: props) {
       }}
     >
       <nav id="editor-tab">
-        <ul>
-          <li>
-            <a href="#" id="tab-editor" onClick={() => setTab("editor")}>
-              Editor
-            </a>
-          </li>
-          <li>
-            <a href="#" id="tab-preview" onClick={() => setTab("preview")}>
-              Preview
-            </a>
-          </li>
-        </ul>
+        <BracketButton
+          values={[
+            { label: "Editor", onClick: () => setTab("editor") },
+            { label: "Preview", onClick: () => setTab("preview") },
+          ]}
+        />
       </nav>
 
       <div id="editor-main" className={tab === "editor" ? "" : "hide-touch"}>
@@ -77,11 +72,11 @@ export default function Editor({ onSubmit, editPost, demoMode }: props) {
           id="input"
           name="input"
           placeholder="本文"
-          value={text}
+          // value={text}
           defaultValue={editPost?.text ?? undefined}
           onChange={async (e) => {
             const md = e.currentTarget.value;
-            setText(md);
+            // setText(md);
             const parsed = await parse(md);
             setMarkdown(parsed);
           }}
@@ -91,11 +86,7 @@ export default function Editor({ onSubmit, editPost, demoMode }: props) {
         id="editor-preview"
         className={tab === "preview" ? "" : "hide-touch"}
       >
-        <div
-          id="output"
-          className="post-html"
-          dangerouslySetInnerHTML={{ __html: markdown }}
-        ></div>
+        <Post html={markdown} />
       </div>
 
       {!demoMode && (

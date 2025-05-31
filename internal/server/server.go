@@ -408,7 +408,7 @@ func postListPage(w http.ResponseWriter, r *http.Request, kvs *kvs) {
 		}
 	}
 
-	var pf []postForFront
+	pf := []postForFront{}
 	for _, v := range p {
 		pf = append(pf, v.toPostForFront())
 	}

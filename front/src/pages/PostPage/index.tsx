@@ -1,4 +1,5 @@
 import BracketButton from "../../components/bracket_button";
+import Post from "../../components/post";
 import StatusBadge from "../../components/status_badge";
 import type { post } from "../../lib/types";
 import "./index.css";
@@ -42,10 +43,7 @@ export default function PostPage({
             <time>{post.updatedDatetime}</time>
           </li>
         </ul>
-        <div
-          className="post-html"
-          dangerouslySetInnerHTML={{ __html: post.html }}
-        ></div>
+        <Post html={post.html} />
       </div>
     </div>
   );

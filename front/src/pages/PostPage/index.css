@@ -1,10 +1,4 @@
 .pages-post {
-  .post-html {
-    & > * {
-      margin: 16px;
-    }
-  }
-
   #post {
     .title {
       margin: 16px;
