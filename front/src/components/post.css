@@ -1,0 +1,5 @@
+.components-post {
+  & > * {
+    margin: 16px;
+  }
+}

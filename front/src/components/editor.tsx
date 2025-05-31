@@ -3,6 +3,7 @@ import { parse } from "../lib/markdown";
 import "./editor.css";
 import type { permission } from "../lib/types";
 import BracketButton from "./bracket_button";
+import Post from "./post";
 
 interface props {
   onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
@@ -85,11 +86,7 @@ export default function Editor({ onSubmit, editPost, demoMode }: props) {
         id="editor-preview"
         className={tab === "preview" ? "" : "hide-touch"}
       >
-        <div
-          id="output"
-          className="post-html"
-          dangerouslySetInnerHTML={{ __html: markdown }}
-        ></div>
+        <Post html={markdown} />
       </div>
 
       {!demoMode && (
