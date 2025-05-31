@@ -213,6 +213,21 @@ func TestBlockElementsToHTML(t *testing.T) {
 		},
 	})
 	test.AssertSame(t, got, expect)
+
+	expect = "<dl><dt>term1</dt><dd>description1</dd><dt>term2</dt><dd>description2</dd></dl>"
+	got = blockElementsToHTML([]blockElement{
+		{
+			kind:                   blockElementDescriptionListItem,
+			descriptionTerm:        "term1",
+			descriptionDescription: "description1",
+		},
+		{
+			kind:                   blockElementDescriptionListItem,
+			descriptionTerm:        "term2",
+			descriptionDescription: "description2",
+		},
+	})
+	test.AssertSame(t, got, expect)
 }
 
 func TestInlineElementTreeToHTML(t *testing.T) {

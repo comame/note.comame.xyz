@@ -249,6 +249,49 @@ Hello, world!`)
 		},
 	}
 	test.AssertEquals(t, got, expect)
+
+	got = parseBlock(`; 定義1
+: 説明1
+; 定義2
+: 説明2`)
+	expect = []blockElement{
+		{
+			kind:                   blockElementDescriptionListItem,
+			descriptionTerm:        "定義1",
+			descriptionDescription: "説明1",
+		},
+		{
+			kind:                   blockElementDescriptionListItem,
+			descriptionTerm:        "定義2",
+			descriptionDescription: "説明2",
+		},
+	}
+	test.AssertEquals(t, got, expect)
+
+	got = parseBlock(`; 定義
+説明ではない`)
+	expect = []blockElement{
+		{
+			kind: blockElementKindParagraph,
+			children: inlineElement{
+				kind: inlineElementKindRoot,
+				children: []inlineElement{
+					{
+						kind: inlineElementKindText,
+						s:    "; 定義",
+					},
+					{
+						kind: inlineElementKindBreak,
+					},
+					{
+						kind: inlineElementKindText,
+						s:    "説明ではない",
+					},
+				},
+			},
+		},
+	}
+	test.AssertEquals(t, got, expect)
 }
 
 //go:embed spec.md
@@ -260,5 +303,5 @@ func ExampleToHTML() {
 	fmt.Println(html)
 	// Output:
 	// <h1>見出し1</h1><h2>見出し2</h2><h3>見出し3</h3><h2>リスト</h2><ul><li>リスト</li><ul><li>リスト</li><ul><li>リスト</li></ul></ul><li>リスト</li></ul><ul><li>空行を挟むと別のリストとして扱われる</li></ul><ul><li><input type='checkbox' inert>チェックボックス</li><li><input type='checkbox' checked inert>チェックボックス</li></ul><h2>段落</h2><p>通常の Markdown とは異なり、<br>行末の改行は無視されない。</p><p>空行をあけると別の段落として扱われる。</p><h2>コードブロック</h2><pre><code>Lorem ipsum
-	// - コードブロック内では Markdown として解釈されない</code></pre><h2>インライン要素</h2><p><b>太字</b> <code>インラインコード</code> <a href="https://example.com">link</a> <a href="https://example.com">https://example.com</a></p><p><a href="https://example.com">l<code>i</code><b>n</b>k</a> のように、組み合わせることもできる</p><h2>拡張構文</h2><details><summary>サマリ</summary><p>内容は格納される</p></details>
+	// - コードブロック内では Markdown として解釈されない</code></pre><h2>インライン要素</h2><p><b>太字</b> <code>インラインコード</code> <a href="https://example.com">link</a> <a href="https://example.com">https://example.com</a></p><p><a href="https://example.com">l<code>i</code><b>n</b>k</a> のように、組み合わせることもできる</p><h2>拡張構文</h2><details><summary>サマリ</summary><p>内容は格納される</p></details><dl><dt>定義リスト</dt><dd>説明はここに入る</dd><dt>定義2</dt><dd>説明2</dd></dl>
 }

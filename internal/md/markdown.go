@@ -6,6 +6,16 @@ import (
 	"unicode"
 )
 
+var codeStartPattern = regexp.MustCompile("^```(.*)$")
+var checkboxListPattern = regexp.MustCompile(`^((?:  )*)- \[([ x])\] (.+)$`)
+var listPattern = regexp.MustCompile((`^((?:  )*)- (.+)$`))
+var headPattern = regexp.MustCompile(`^(##?#?) +(.+)$`)
+var imagePattern = regexp.MustCompile(`^!\[(.+)\]\((https:\/\/[\w/.\-_]+)\)$`)
+var summaryPattern = regexp.MustCompile(`^<summary>(.+)<\/summary>$`)
+var customDetailsPattern = regexp.MustCompile("^:::details (.+)$")
+var descriptionTermPattern = regexp.MustCompile(`^; +(.+)$`)
+var descriptionDetailsPattern = regexp.MustCompile(`^: +(.+)$`)
+
 func ToHTML(md string) string {
 	return blockElementsToHTML(parseBlock(md))
 }
@@ -24,6 +34,10 @@ func parseBlock(s string) []blockElement {
 	var isDetailsSummaryParsed bool
 	var detailsSummary string
 	var detailsContentLines []string
+
+	var isDescription bool
+	var descriptionTerm string
+	var descriptionTermOriginalLine string
 
 	for _, l := range strings.Split(s, "\n") {
 		// バッファに溜まってる文字を通常の段落として書き出す
@@ -76,7 +90,6 @@ func parseBlock(s string) []blockElement {
 		}
 
 		if isDetails {
-			summaryPattern := regexp.MustCompile(`^<summary>(.+)<\/summary>$`)
 			if !isDetailsSummaryParsed {
 				if m := summaryPattern.FindStringSubmatch(l); len(m) > 0 {
 					detailsSummary = m[1]
@@ -102,10 +115,34 @@ func parseBlock(s string) []blockElement {
 			continue
 		}
 
+		if isDescription {
+			m := descriptionDetailsPattern.FindStringSubmatch(l)
+			if len(m) == 0 {
+				// 「; 定義」の次行に「: 説明」が来なければ、ただの段落として扱う
+				if paragraphBuffer != "" {
+					paragraphBuffer += "\n"
+				}
+				paragraphBuffer += descriptionTermOriginalLine
+				paragraphBuffer += "\n"
+				paragraphBuffer += l
+				isDescription = false
+				continue
+			}
+
+			details := m[1]
+			ret = append(ret, blockElement{
+				kind:                   blockElementDescriptionListItem,
+				descriptionTerm:        descriptionTerm,
+				descriptionDescription: details,
+			})
+
+			isDescription = false
+			continue
+		}
+
 		// コードブロック中は Markdown として解釈してはならないので、ここより上で処理する必要がある
 		l = strings.TrimRightFunc(l, unicode.IsSpace)
 
-		codeStartPattern := regexp.MustCompile("^```(.*)$")
 		if m := codeStartPattern.FindStringSubmatch(l); len(m) > 0 {
 			flush()
 
@@ -123,7 +160,6 @@ func parseBlock(s string) []blockElement {
 			continue
 		}
 
-		customDetailsPattern := regexp.MustCompile("^:::details (.+)$")
 		if m := customDetailsPattern.FindStringSubmatch(l); len(m) > 0 {
 			flush()
 
@@ -136,7 +172,6 @@ func parseBlock(s string) []blockElement {
 
 		// 簡単のため、リストのインデントは常にスペース2つとする
 		// checkboxList は有効な list なので、list より前に検証する必要がある
-		checkboxListPattern := regexp.MustCompile(`^((?:  )*)- \[([ x])\] (.+)$`)
 		if m := checkboxListPattern.FindStringSubmatch(l); len(m) > 0 {
 			flush()
 
@@ -160,7 +195,6 @@ func parseBlock(s string) []blockElement {
 		}
 
 		// 簡単のため、リストのインデントは常にスペース2つとする
-		listPattern := regexp.MustCompile((`^((?:  )*)- (.+)$`))
 		if m := listPattern.FindStringSubmatch(l); len(m) > 0 {
 			flush()
 
@@ -175,7 +209,6 @@ func parseBlock(s string) []blockElement {
 			continue
 		}
 
-		headPattern := regexp.MustCompile(`^(##?#?) +(.+)$`)
 		if m := headPattern.FindStringSubmatch(l); len(m) > 0 {
 			flush()
 
@@ -200,7 +233,6 @@ func parseBlock(s string) []blockElement {
 			continue
 		}
 
-		imagePattern := regexp.MustCompile(`^!\[(.+)\]\((https:\/\/[\w/.\-_]+)\)$`)
 		if m := imagePattern.FindStringSubmatch(l); len(m) > 0 {
 			flush()
 
@@ -212,6 +244,15 @@ func parseBlock(s string) []blockElement {
 				imageSrc:     src,
 				imageCaption: caption,
 			})
+			continue
+		}
+
+		if m := descriptionTermPattern.FindStringSubmatch(l); len(m) > 0 {
+			flush()
+
+			isDescription = true
+			descriptionTerm = m[1]
+			descriptionTermOriginalLine = l
 			continue
 		}
 
