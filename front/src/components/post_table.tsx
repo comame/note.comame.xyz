@@ -1,4 +1,4 @@
-import type { post } from "../lib/types";
+import { getPostURL, type post } from "../lib/types";
 import BracketButton from "./bracket_button";
 import StatusBadge from "./status_badge";
 import "./post_table.css";
@@ -27,10 +27,10 @@ export default function PostTable({ posts, isLoggedIn }: props) {
       </thead>
       <tbody>
         {posts.map((post) => (
-          <tr key={post.url}>
+          <tr key={getPostURL(post)}>
             <div>
               <td className="title">
-                <a href={post.url}>{post.title}</a>
+                <a href={getPostURL(post)}>{post.title}</a>
               </td>
               <td>{formatDate(post.updatedDatetime)}</td>
             </div>

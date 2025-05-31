@@ -22,7 +22,7 @@ type post struct {
 // FIXME: どう考えてもフロントエンドと統一したほうがいい
 type postForFront struct {
 	ID                  uint64     `json:"id"`
-	URL                 string     `json:"url"`
+	URLKey              string     `json:"url_key"`
 	CreatedDatetime     string     `json:"createdDatetime"`
 	UpdatedDatetime     string     `json:"updatedDatetime"`
 	Title               string     `json:"title"`
@@ -53,7 +53,7 @@ func (p *post) toPostForFront() postForFront {
 
 	return postForFront{
 		ID:                  p.ID,
-		URL:                 p.getURL(),
+		URLKey:              p.URLKey,
 		CreatedDatetime:     p.CreatedDatetime,
 		UpdatedDatetime:     p.UpdatedDatetime,
 		Title:               p.Title,
@@ -88,23 +88,6 @@ func (p *post) getURL() string {
 		return fmt.Sprintf("/posts/unlisted/%s", p.URLKey)
 	case postVisibilityPrivate:
 		return fmt.Sprintf("/posts/private/%s", p.URLKey)
-	}
-
-	panic("unknown visibility")
-}
-
-func (p *post) editURL() string {
-	return fmt.Sprintf("/edit/post/%d", p.ID)
-}
-
-func (p *post) visibilityLabel() string {
-	switch p.Visibility {
-	case postVisibilityPublic:
-		return "一般公開"
-	case postVisibilityUnlisted:
-		return "限定公開"
-	case postVisibilityPrivate:
-		return "非公開"
 	}
 
 	panic("unknown visibility")
