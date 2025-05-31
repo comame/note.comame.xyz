@@ -35,15 +35,15 @@ type pageProps struct {
 }
 
 type allPostsPageData struct {
-	Posts []postForFront `json:"posts"`
+	Posts []post `json:"posts"`
 }
 
 type postPageData struct {
-	Post postForFront `json:"post"`
+	Post post `json:"post"`
 }
 
 type editPostPageData struct {
-	Post postForFront `json:"post"`
+	Post post `json:"post"`
 }
 
 func setupTemplate() *template.Template {

@@ -165,7 +165,7 @@ func Start() {
 		log.Println(p)
 
 		renderTemplate(s, w, pageEditPost, "記事を編集", editPostPageData{
-			Post: p.toPostForFront(),
+			Post: *p,
 		})
 	})
 
@@ -203,7 +203,7 @@ func Start() {
 			return
 		}
 
-		p2, err := getPostByID(r.Context(), id, p.Visibility)
+		p2, err := getPostByID(r.Context(), id, p.Permission)
 		if err != nil {
 			log.Println(err)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -343,14 +343,14 @@ type redirectResponse struct {
 }
 
 func postPage(w http.ResponseWriter, r *http.Request, s *session) {
-	var v postVisibility
+	var v permission
 	switch strings.Split(r.URL.Path, "/")[2] {
 	case "private":
-		v = postVisibilityPrivate
+		v = permissionPrivate
 	case "unlisted":
-		v = postVisibilityUnlisted
+		v = permissionURL
 	case "public":
-		v = postVisibilityPublic
+		v = permissionPublic
 	}
 
 	key := r.PathValue("url_key")
@@ -365,13 +365,13 @@ func postPage(w http.ResponseWriter, r *http.Request, s *session) {
 		return
 	}
 
-	if p.Visibility != v {
+	if p.Permission != v {
 		renderNotFound(s, w)
 		return
 	}
 
 	renderTemplate(s, w, pagePost, p.Title+" | note.comame.xyz", postPageData{
-		Post: p.toPostForFront(),
+		Post: *p,
 	})
 }
 
@@ -408,12 +408,7 @@ func postListPage(w http.ResponseWriter, r *http.Request, kvs *kvs) {
 		}
 	}
 
-	pf := []postForFront{}
-	for _, v := range p {
-		pf = append(pf, v.toPostForFront())
-	}
-
 	renderTemplate(s, w, pageAllPosts, "記事一覧", allPostsPageData{
-		Posts: pf,
+		Posts: p,
 	})
 }
