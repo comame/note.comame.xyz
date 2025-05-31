@@ -80,7 +80,7 @@ func (c *connection) transactionGuard() error {
 
 func (c *connection) findPostByURLKey(ctx context.Context, urlKey string) (*post, error) {
 	rows, err := c.db.QueryContext(ctx, `
-		SELECT id, url_key, created_datetime, updated_datetime, title, text, visibility
+		SELECT id, url_key, created_datetime, updated_datetime, title, text, permission
 		FROM nt_post
 		WHERE url_key = ?
 	`, urlKey)
@@ -94,7 +94,7 @@ func (c *connection) findPostByURLKey(ctx context.Context, urlKey string) (*post
 	}
 
 	p := new(post)
-	if err := rows.Scan(&p.ID, &p.URLKey, &p.CreatedDatetime, &p.UpdatedDatetime, &p.Title, &p.Text, &p.Visibility); err != nil {
+	if err := rows.Scan(&p.ID, &p.URLKey, &p.CreatedDatetime, &p.UpdatedDatetime, &p.Title, &p.Text, &p.Permission); err != nil {
 		return nil, err
 	}
 
@@ -103,7 +103,7 @@ func (c *connection) findPostByURLKey(ctx context.Context, urlKey string) (*post
 
 func (c *connection) findPostByID(ctx context.Context, id uint64) (*post, error) {
 	rows, err := c.db.QueryContext(ctx, `
-		SELECT id, url_key, created_datetime, updated_datetime, title, text, visibility
+		SELECT id, url_key, created_datetime, updated_datetime, title, text, permission
 		FROM nt_post
 		WHERE id = ?
 	`, id)
@@ -117,7 +117,7 @@ func (c *connection) findPostByID(ctx context.Context, id uint64) (*post, error)
 	}
 
 	p := new(post)
-	if err := rows.Scan(&p.ID, &p.URLKey, &p.CreatedDatetime, &p.UpdatedDatetime, &p.Title, &p.Text, &p.Visibility); err != nil {
+	if err := rows.Scan(&p.ID, &p.URLKey, &p.CreatedDatetime, &p.UpdatedDatetime, &p.Title, &p.Text, &p.Permission); err != nil {
 		return nil, err
 	}
 
@@ -133,10 +133,10 @@ func (c *connection) createPost(ctx context.Context, post post) error {
 
 	if _, err := c.db.Exec(`
 		INSERT INTO nt_post
-		(url_key, created_datetime, updated_datetime, title, text, visibility)
+		(url_key, created_datetime, updated_datetime, title, text, permission)
 		values
 		(?, ?, ?, ?, ?, ?)
-		`, post.URLKey, post.CreatedDatetime, post.UpdatedDatetime, post.Title, post.Text, post.Visibility); err != nil {
+		`, post.URLKey, post.CreatedDatetime, post.UpdatedDatetime, post.Title, post.Text, post.Permission); err != nil {
 		return err
 	}
 
@@ -156,9 +156,9 @@ func (c *connection) getAllPostsForAnonymous(ctx context.Context) ([]post, error
 			nt_post.updated_datetime,
 			nt_post.title,
 			nt_post.text,
-			nt_post.visibility
+			nt_post.permission
 		FROM nt_post
-		WHERE visibility = 2
+		WHERE permission = 'public'
 	`)
 	if err != nil {
 		return nil, err
@@ -175,7 +175,7 @@ func (c *connection) getAllPostsForAnonymous(ctx context.Context) ([]post, error
 			&post.UpdatedDatetime,
 			&post.Title,
 			&post.Text,
-			&post.Visibility,
+			&post.Permission,
 		); err != nil {
 			return nil, err
 		}
@@ -194,7 +194,7 @@ func (c *connection) getAllPostsForAdmin(ctx context.Context) ([]post, error) {
 			nt_post.updated_datetime,
 			nt_post.title,
 			nt_post.text,
-			nt_post.visibility
+			nt_post.permission
 		FROM nt_post
 	`)
 	if err != nil {
@@ -212,7 +212,7 @@ func (c *connection) getAllPostsForAdmin(ctx context.Context) ([]post, error) {
 			&post.UpdatedDatetime,
 			&post.Title,
 			&post.Text,
-			&post.Visibility,
+			&post.Permission,
 		); err != nil {
 			return nil, err
 		}
@@ -233,10 +233,10 @@ func (c *connection) updatePostInTransaction(ctx context.Context, post post) err
 			updated_datetime = ?,
 			title = ?,
 			text = ?,
-			visibility = ?
+			permission = ?
 		WHERE
 			id = ?
-	`, post.UpdatedDatetime, post.Title, post.Text, post.Visibility, post.ID)
+	`, post.UpdatedDatetime, post.Title, post.Text, post.Permission, post.ID)
 	if err != nil {
 		return err
 	}
@@ -290,7 +290,7 @@ func (c *connection) copyPostToPostLogInTransaction(ctx context.Context, postID 
 			created_datetime,
 			updated_datetime,
 			text,
-			visibility
+			permission
 		)
 		SELECT
 			id,
@@ -298,7 +298,7 @@ func (c *connection) copyPostToPostLogInTransaction(ctx context.Context, postID 
 			created_datetime,
 			updated_datetime,
 			text,
-			visibility
+			permission
 		FROM nt_post
 		WHERE nt_post.id = ?
 	`, postID); err != nil {

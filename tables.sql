@@ -6,11 +6,10 @@ CREATE TABLE `nt_post` (
   `updated_datetime` datetime NOT NULL,
   `title` text NOT NULL,
   `text` text NOT NULL,
-  `visibility` int NOT NULL COMMENT '0=非公開, 1=限定公開, 2=全体公開',
+  `permission` varchar(16) NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `url_key` (`url_key`),
-  KEY `visibility` (`visibility`)
-) ENGINE=InnoDB AUTO_INCREMENT=31 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  UNIQUE KEY `url_key` (`url_key`)
+) ENGINE=InnoDB AUTO_INCREMENT=37 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE `nt_post_log` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
@@ -19,8 +18,8 @@ CREATE TABLE `nt_post_log` (
   `created_datetime` datetime NOT NULL,
   `updated_datetime` datetime NOT NULL,
   `text` text NOT NULL,
-  `visibility` int NOT NULL,
+  `permission` varchar(16) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `post_id` (`post_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='nt_postのログテーブル';
+) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='nt_postのログテーブル';
 
