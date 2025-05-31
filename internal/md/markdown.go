@@ -6,6 +6,11 @@ import (
 	"unicode"
 )
 
+var codeStartPattern = regexp.MustCompile("^```(.*)$")
+var checkboxListPattern = regexp.MustCompile(`^((?:  )*)- \[([ x])\] (.+)$`)
+var listPattern = regexp.MustCompile((`^((?:  )*)- (.+)$`))
+var headPattern = regexp.MustCompile(`^(##?#?) +(.+)$`)
+
 func ToHTML(md string) string {
 	return blockElementsToHTML(parseBlock(md))
 }
@@ -105,7 +110,6 @@ func parseBlock(s string) []blockElement {
 		// コードブロック中は Markdown として解釈してはならないので、ここより上で処理する必要がある
 		l = strings.TrimRightFunc(l, unicode.IsSpace)
 
-		codeStartPattern := regexp.MustCompile("^```(.*)$")
 		if m := codeStartPattern.FindStringSubmatch(l); len(m) > 0 {
 			flush()
 
@@ -136,7 +140,6 @@ func parseBlock(s string) []blockElement {
 
 		// 簡単のため、リストのインデントは常にスペース2つとする
 		// checkboxList は有効な list なので、list より前に検証する必要がある
-		checkboxListPattern := regexp.MustCompile(`^((?:  )*)- \[([ x])\] (.+)$`)
 		if m := checkboxListPattern.FindStringSubmatch(l); len(m) > 0 {
 			flush()
 
@@ -160,7 +163,6 @@ func parseBlock(s string) []blockElement {
 		}
 
 		// 簡単のため、リストのインデントは常にスペース2つとする
-		listPattern := regexp.MustCompile((`^((?:  )*)- (.+)$`))
 		if m := listPattern.FindStringSubmatch(l); len(m) > 0 {
 			flush()
 
@@ -175,7 +177,6 @@ func parseBlock(s string) []blockElement {
 			continue
 		}
 
-		headPattern := regexp.MustCompile(`^(##?#?) +(.+)$`)
 		if m := headPattern.FindStringSubmatch(l); len(m) > 0 {
 			flush()
 
