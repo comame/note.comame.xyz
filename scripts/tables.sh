@@ -1,9 +1,9 @@
 #! /bin/bash
 
-host='mysql.comame.dev'
+socket='.testdb/mysql.sock'
 database='note'
 
-mysqldump -h"$host" -uroot -p --databases "$database" \
+mysqldump -S"$socket" -uroot --databases "$database" \
     --compact \
     --no-data \
     --no-create-db \
