@@ -44,7 +44,7 @@ func (p *post) getURL() string {
 		return fmt.Sprintf("/posts/private/%s", p.URLKey)
 	}
 
-	panic("unknown visibility")
+	panic("unknown visibility " + p.Permission)
 }
 
 func getPostByID(ctx context.Context, id uint64, permission permission) (*post, error) {

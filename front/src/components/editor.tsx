@@ -11,7 +11,7 @@ interface props {
     title: string;
     text: string;
     permission: permission;
-    id: string;
+    id: number;
   };
   demoMode?: boolean;
 }
@@ -30,10 +30,7 @@ export default function Editor({ onSubmit, editPost, demoMode }: props) {
     });
   }, [editPost]);
 
-  let defaultPermission = undefined;
-  if (editPost) {
-    defaultPermission = permissionToVisibility(editPost.permission);
-  }
+  const defaultPermission = editPost?.permission ?? "private";
 
   return (
     <form
@@ -91,10 +88,10 @@ export default function Editor({ onSubmit, editPost, demoMode }: props) {
 
       {!demoMode && (
         <div id="control">
-          <select name="visibility" defaultValue={defaultPermission}>
-            <option value="0">非公開</option>
-            <option value="1">限定公開</option>
-            <option value="2">公開</option>
+          <select name="permission" defaultValue={defaultPermission}>
+            <option value="private">非公開</option>
+            <option value="url">限定公開</option>
+            <option value="public">公開</option>
           </select>
           <button id="submit">SAVE</button>
         </div>
@@ -103,17 +100,6 @@ export default function Editor({ onSubmit, editPost, demoMode }: props) {
       {editPost && <input type="hidden" name="id" value={editPost.id} />}
     </form>
   );
-}
-
-function permissionToVisibility(p: permission): number {
-  switch (p) {
-    case "private":
-      return 0;
-    case "url":
-      return 1;
-    case "public":
-      return 2;
-  }
 }
 
 function beforeUnloadHandler(e: BeforeUnloadEvent) {

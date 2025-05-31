@@ -1,6 +1,6 @@
 import type { FormEvent } from "react";
 import Editor from "../../components/editor";
-import type { post } from "../../lib/types";
+import type { permission, post } from "../../lib/types";
 import "./index.css";
 
 type pageData = {
@@ -21,10 +21,10 @@ async function onSubmit(e: FormEvent<HTMLFormElement>) {
   const form = e.currentTarget as HTMLFormElement;
 
   const fd = new FormData(form);
-  const json = {
-    visibility: Number.parseInt(fd.get("visibility") as string, 10),
-    text: fd.get("input"),
-    title: fd.get("title"),
+  const json: Partial<post> = {
+    permission: fd.get("permission") as permission,
+    text: fd.get("input") as string,
+    title: fd.get("title") as string,
     id: Number.parseInt(fd.get("id") as string, 10),
   };
 

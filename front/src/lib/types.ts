@@ -1,7 +1,7 @@
 export type permission = "public" | "private" | "url";
 
 export type post = {
-  id: string;
+  id: number;
   url_key: string;
   createdDatetime: string;
   updatedDatetime: string;
