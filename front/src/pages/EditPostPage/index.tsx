@@ -1,6 +1,6 @@
 import type { FormEvent } from "react";
 import Editor from "../../components/editor";
-import type { permission, post } from "../../lib/types";
+import type { permission, post, postConfig } from "../../lib/types";
 import "./index.css";
 
 type pageData = {
@@ -15,26 +15,14 @@ export default function EditPostPage({ pageData }: { pageData: pageData }) {
   );
 }
 
-async function onSubmit(e: FormEvent<HTMLFormElement>) {
-  e.preventDefault();
-
-  const form = e.currentTarget as HTMLFormElement;
-
-  const fd = new FormData(form);
-  const json: Partial<post> = {
-    permission: fd.get("permission") as permission,
-    text: fd.get("input") as string,
-    title: fd.get("title") as string,
-    id: Number.parseInt(fd.get("id") as string, 10),
-  };
-
-  const res = await fetch(`/edit/post/${json.id}`, {
+async function onSubmit(postConfig: postConfig) {
+  const res = await fetch(`/edit/post/${postConfig.id}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     credentials: "include",
-    body: JSON.stringify(json),
+    body: JSON.stringify(postConfig),
     redirect: "manual",
   });
 

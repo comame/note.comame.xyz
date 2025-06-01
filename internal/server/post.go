@@ -8,7 +8,6 @@ import (
 	"github.com/comame/note.comame.xyz/internal/md"
 )
 
-// FIXME: どう考えてもフロントエンドと統一したほうがいい
 type post struct {
 	ID                  uint64     `json:"id"`
 	URLKey              string     `json:"url_key"`

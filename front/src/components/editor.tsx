@@ -1,13 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { parse } from "../lib/markdown";
 import "./editor.css";
-import type { permission } from "../lib/types";
+import type { permission, postConfig } from "../lib/types";
 import BracketButton from "./bracket_button";
 import Post from "./post";
 
 interface props {
-  // FIXME: 直接イベントを触っているのは明らかに不健全なのでなんとかしたい...
-  onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
+  onSubmit: (postConfig: postConfig) => void;
   editPost?: {
     title: string;
     text: string;
@@ -38,18 +37,26 @@ export default function Editor({ onSubmit, editPost, demoMode }: props) {
 
   const defaultPermission = editPost?.permission ?? "private";
 
+  const onSubmitHandler = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    stopPreventUnload();
+
+    if (demoMode) {
+      return;
+    }
+    deleteDraft(draftID);
+    onSubmit({
+      title,
+      text,
+      permission: e.currentTarget.permission.value as permission,
+      id: editPost?.id,
+    });
+  };
+
   return (
     <form
       id="editor-root"
-      onSubmit={(e) => {
-        stopPreventUnload();
-
-        if (demoMode) {
-          return;
-        }
-        deleteDraftFromLocalHost(draftID);
-        onSubmit(e);
-      }}
+      onSubmit={onSubmitHandler}
       onChange={() => {
         startPreventUnload();
       }}
@@ -149,7 +156,7 @@ function loadDraft(
   return null;
 }
 
-function deleteDraftFromLocalHost(draftID: string | null) {
+function deleteDraft(draftID: string | null) {
   const key = `draft-${draftID}`;
   localStorage.removeItem(key);
 }
