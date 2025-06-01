@@ -8,7 +8,6 @@ import (
 	"github.com/comame/note.comame.xyz/internal/md"
 )
 
-// FIXME: どう考えてもフロントエンドと統一したほうがいい
 type post struct {
 	ID                  uint64     `json:"id"`
 	URLKey              string     `json:"url_key"`
@@ -44,7 +43,7 @@ func (p *post) getURL() string {
 		return fmt.Sprintf("/posts/private/%s", p.URLKey)
 	}
 
-	panic("unknown visibility")
+	panic("unknown visibility " + p.Permission)
 }
 
 func getPostByID(ctx context.Context, id uint64, permission permission) (*post, error) {

@@ -1,7 +1,7 @@
 export type permission = "public" | "private" | "url";
 
 export type post = {
-  id: string;
+  id: number;
   url_key: string;
   createdDatetime: string;
   updatedDatetime: string;
@@ -10,6 +10,13 @@ export type post = {
   permission: permission;
   text: string;
   html: string;
+};
+
+export type postConfig = {
+  id?: number;
+  text: string;
+  title: string;
+  permission: permission;
 };
 
 export function getPostURL(post: post): string {

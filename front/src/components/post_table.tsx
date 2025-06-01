@@ -83,7 +83,7 @@ function formatDate(datetime: string) {
   return `${d.getMonth() + 1}月${d.getDate()}日`;
 }
 
-function deletePost(postID: string) {
+function deletePost(postID: number) {
   if (!confirm("削除しますか")) {
     return;
   }
