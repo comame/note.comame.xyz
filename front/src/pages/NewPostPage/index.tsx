@@ -1,7 +1,6 @@
 import "./index.css";
-import { type FormEvent } from "react";
 import Editor from "../../components/editor";
-import type { permission, post, postConfig } from "../../lib/types";
+import type { postConfig } from "../../lib/types";
 
 type pageData = {};
 
