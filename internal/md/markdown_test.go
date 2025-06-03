@@ -187,44 +187,6 @@ inline`)
 	}
 	test.AssertEquals(t, got, expect)
 
-	// トグル (HTML)
-	got = parseBlock(`<details>
-<summary>Summary</summary>
-Hello, world!
-- list
-- list
-</details>`)
-	expect = []blockElement{
-		{
-			kind:               blockElementDetails,
-			detailsSummary:     "Summary",
-			detailsContentHTML: "<p>Hello, world!</p><ul><li>list</li><li>list</li></ul>",
-		},
-	}
-	test.AssertEquals(t, got, expect)
-	got = parseBlock(`<details>
-Hello, world!
-</details>`)
-	expect = []blockElement{
-		{
-			kind:               blockElementDetails,
-			detailsSummary:     "",
-			detailsContentHTML: "<p>Hello, world!</p>",
-		},
-	}
-	test.AssertEquals(t, got, expect)
-	got = parseBlock(`<details>
-<summary>summary</summary>
-Hello, world!`)
-	expect = []blockElement{
-		{
-			kind:               blockElementDetails,
-			detailsSummary:     "summary",
-			detailsContentHTML: "<p>Hello, world!</p>",
-		},
-	}
-	test.AssertEquals(t, got, expect)
-
 	// トグル (カスタム)
 	got = parseBlock(`:::details Summary
 Hello, world!
@@ -233,9 +195,32 @@ Hello, world!
 :::`)
 	expect = []blockElement{
 		{
-			kind:               blockElementDetails,
-			detailsSummary:     "Summary",
-			detailsContentHTML: "<p>Hello, world!</p><ul><li>list</li><li>list</li></ul>",
+			kind:           blockElementDetails,
+			detailsSummary: "Summary",
+			detailsContent: []blockElement{
+				{
+					kind: blockElementKindParagraph,
+					children: inlineElement{
+						kind: inlineElementKindRoot,
+						children: []inlineElement{
+							{
+								kind: inlineElementKindText,
+								s:    "Hello, world!",
+							},
+						},
+					},
+				},
+				{
+					kind:      blockElementKindList,
+					children:  inlineElement{kind: inlineElementKindRoot, children: []inlineElement{{kind: inlineElementKindText, s: "list"}}},
+					listLevel: 1,
+				},
+				{
+					kind:      blockElementKindList,
+					children:  inlineElement{kind: inlineElementKindRoot, children: []inlineElement{{kind: inlineElementKindText, s: "list"}}},
+					listLevel: 1,
+				},
+			},
 		},
 	}
 	test.AssertEquals(t, got, expect)
@@ -243,9 +228,23 @@ Hello, world!
 Hello, world!`)
 	expect = []blockElement{
 		{
-			kind:               blockElementDetails,
-			detailsSummary:     "summary",
-			detailsContentHTML: "<p>Hello, world!</p>",
+			kind: blockElementKindParagraph,
+			children: inlineElement{
+				kind: inlineElementKindRoot,
+				children: []inlineElement{
+					{
+						kind: inlineElementKindText,
+						s:    ":::details summary",
+					},
+					{
+						kind: inlineElementKindBreak,
+					},
+					{
+						kind: inlineElementKindText,
+						s:    "Hello, world!",
+					},
+				},
+			},
 		},
 	}
 	test.AssertEquals(t, got, expect)
