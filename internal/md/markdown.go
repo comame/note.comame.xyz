@@ -31,7 +31,7 @@ func parseBlockInternal(lines []string) (ret []blockElement) {
 	var codeBlockName string
 	var codeBlockLines []string
 
-	var isDescription bool
+	var shouldBeDescriptionDescription bool
 	var descriptionTerm string
 	var descriptionTermOriginalLine string
 
@@ -49,6 +49,7 @@ func parseBlockInternal(lines []string) (ret []blockElement) {
 			}
 		}
 
+		// コードブロック中は Markdown として解釈してはならないので、一番初めにチェックする必要がある
 		if isCodeBlock {
 			if l == "```" {
 				isCodeBlock = false
@@ -67,7 +68,10 @@ func parseBlockInternal(lines []string) (ret []blockElement) {
 			continue
 		}
 
-		if isDescription {
+		// 行末の空白は削る
+		l = strings.TrimRightFunc(l, unicode.IsSpace)
+
+		if shouldBeDescriptionDescription {
 			m := descriptionDetailsPattern.FindStringSubmatch(l)
 			if len(m) == 0 {
 				// 「; 定義」の次行に「: 説明」が来なければ、ただの段落として扱う
@@ -77,7 +81,7 @@ func parseBlockInternal(lines []string) (ret []blockElement) {
 				paragraphBuffer += descriptionTermOriginalLine
 				paragraphBuffer += "\n"
 				paragraphBuffer += l
-				isDescription = false
+				shouldBeDescriptionDescription = false
 				continue
 			}
 
@@ -88,12 +92,9 @@ func parseBlockInternal(lines []string) (ret []blockElement) {
 				descriptionDescription: details,
 			})
 
-			isDescription = false
+			shouldBeDescriptionDescription = false
 			continue
 		}
-
-		// コードブロック中は Markdown として解釈してはならないので、ここより上で処理する必要がある
-		l = strings.TrimRightFunc(l, unicode.IsSpace)
 
 		if m := codeStartPattern.FindStringSubmatch(l); len(m) > 0 {
 			flush()
@@ -213,7 +214,7 @@ func parseBlockInternal(lines []string) (ret []blockElement) {
 		if m := descriptionTermPattern.FindStringSubmatch(l); len(m) > 0 {
 			flush()
 
-			isDescription = true
+			shouldBeDescriptionDescription = true
 			descriptionTerm = m[1]
 			descriptionTermOriginalLine = l
 			continue
