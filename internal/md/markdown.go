@@ -11,7 +11,7 @@ var checkboxListPattern = regexp.MustCompile(`^((?:  )*)- \[([ x])\] (.+)$`)
 var listPattern = regexp.MustCompile((`^((?:  )*)- (.+)$`))
 var headPattern = regexp.MustCompile(`^(##?#?) +(.+)$`)
 var imagePattern = regexp.MustCompile(`^!\[(.+)\]\((https:\/\/[\w/.\-_]+)\)$`)
-var customDetailsPattern = regexp.MustCompile("^:::details (.+)$")
+var customDetailsPattern = regexp.MustCompile("^(:{3,})+details (.+)$")
 var descriptionTermPattern = regexp.MustCompile(`^; +(.+)$`)
 var descriptionDetailsPattern = regexp.MustCompile(`^: +(.+)$`)
 
@@ -106,7 +106,9 @@ func parseBlockInternal(lines []string) (ret []blockElement) {
 		}
 
 		if m := customDetailsPattern.FindStringSubmatch(l); len(m) > 0 {
-			terminate := findLine(lines, i+1, ":::")
+			colons := m[1]
+
+			terminate := findLine(lines, i+1, colons) // 開始記号と同じ数のコロンを終端記号とする
 			// details が閉じられていない場合は、段落として扱う
 			if terminate < 0 {
 				if paragraphBuffer != "" {
@@ -118,7 +120,7 @@ func parseBlockInternal(lines []string) (ret []blockElement) {
 
 			flush()
 
-			detailsSummary := m[1]
+			detailsSummary := m[2]
 
 			blocksInDetails := parseBlockInternal(lines[i+1 : terminate])
 			ret = append(ret, blockElement{
