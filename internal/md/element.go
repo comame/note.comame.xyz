@@ -12,7 +12,7 @@ type blockElement struct {
 	checkboxList           bool
 	checkboxIsChecked      bool
 	detailsSummary         string
-	detailsContentHTML     string
+	detailsContent         []blockElement
 	descriptionTerm        string
 	descriptionDescription string
 }

@@ -10,4 +10,10 @@
   code {
     background-color: rgb(238, 238, 238);
   }
+
+  details {
+    padding-left: 8px;
+    padding-right: 8px;
+    background-color: rgba(163, 163, 163, 0.2);
+  }
 }

@@ -11,8 +11,7 @@ var checkboxListPattern = regexp.MustCompile(`^((?:  )*)- \[([ x])\] (.+)$`)
 var listPattern = regexp.MustCompile((`^((?:  )*)- (.+)$`))
 var headPattern = regexp.MustCompile(`^(##?#?) +(.+)$`)
 var imagePattern = regexp.MustCompile(`^!\[(.+)\]\((https:\/\/[\w/.\-_]+)\)$`)
-var summaryPattern = regexp.MustCompile(`^<summary>(.+)<\/summary>$`)
-var customDetailsPattern = regexp.MustCompile("^:::details (.+)$")
+var customDetailsPattern = regexp.MustCompile("^(:{3,})+details (.+)$")
 var descriptionTermPattern = regexp.MustCompile(`^; +(.+)$`)
 var descriptionDetailsPattern = regexp.MustCompile(`^: +(.+)$`)
 
@@ -21,25 +20,24 @@ func ToHTML(md string) string {
 }
 
 func parseBlock(s string) []blockElement {
-	var ret []blockElement
+	lines := strings.Split(s, "\n")
+	return parseBlockInternal(lines)
+}
 
+func parseBlockInternal(lines []string) (ret []blockElement) {
 	var paragraphBuffer string
 
 	var isCodeBlock bool
 	var codeBlockName string
 	var codeBlockLines []string
 
-	var isDetails bool
-	var isCustomDetails bool
-	var isDetailsSummaryParsed bool
-	var detailsSummary string
-	var detailsContentLines []string
-
 	var isDescription bool
 	var descriptionTerm string
 	var descriptionTermOriginalLine string
 
-	for _, l := range strings.Split(s, "\n") {
+	for i := 0; i < len(lines); i++ {
+		l := lines[i]
+
 		// バッファに溜まってる文字を通常の段落として書き出す
 		flush := func() {
 			if paragraphBuffer != "" {
@@ -66,52 +64,6 @@ func parseBlock(s string) []blockElement {
 			}
 
 			codeBlockLines = append(codeBlockLines, l)
-			continue
-		}
-
-		if isDetails && isCustomDetails {
-			if l == ":::" {
-				ret = append(ret, blockElement{
-					kind:               blockElementDetails,
-					detailsSummary:     detailsSummary,
-					detailsContentHTML: ToHTML(strings.Join(detailsContentLines, "\n")),
-				})
-
-				isDetails = false
-				isCustomDetails = false
-				isDetailsSummaryParsed = false
-				detailsSummary = ""
-				detailsContentLines = nil
-				continue
-			}
-
-			detailsContentLines = append(detailsContentLines, l)
-			continue
-		}
-
-		if isDetails {
-			if !isDetailsSummaryParsed {
-				if m := summaryPattern.FindStringSubmatch(l); len(m) > 0 {
-					detailsSummary = m[1]
-					isDetailsSummaryParsed = true
-					continue
-				}
-			}
-			if l == "</details>" {
-				ret = append(ret, blockElement{
-					kind:               blockElementDetails,
-					detailsSummary:     detailsSummary,
-					detailsContentHTML: ToHTML(strings.Join(detailsContentLines, "\n")),
-				})
-
-				isDetails = false
-				isDetailsSummaryParsed = false
-				detailsSummary = ""
-				detailsContentLines = nil
-				continue
-			}
-
-			detailsContentLines = append(detailsContentLines, l)
 			continue
 		}
 
@@ -153,20 +105,31 @@ func parseBlock(s string) []blockElement {
 			continue
 		}
 
-		if l == "<details>" {
-			flush()
-
-			isDetails = true
-			continue
-		}
-
 		if m := customDetailsPattern.FindStringSubmatch(l); len(m) > 0 {
+			colons := m[1]
+
+			terminate := findLine(lines, i+1, colons) // 開始記号と同じ数のコロンを終端記号とする
+			// details が閉じられていない場合は、段落として扱う
+			if terminate < 0 {
+				if paragraphBuffer != "" {
+					paragraphBuffer += "\n"
+				}
+				paragraphBuffer += l
+				continue
+			}
+
 			flush()
 
-			detailsSummary = m[1]
+			detailsSummary := m[2]
 
-			isDetails = true
-			isCustomDetails = true
+			blocksInDetails := parseBlockInternal(lines[i+1 : terminate])
+			ret = append(ret, blockElement{
+				kind:           blockElementDetails,
+				detailsSummary: detailsSummary,
+				detailsContent: blocksInDetails,
+			})
+
+			i = terminate
 			continue
 		}
 
@@ -285,15 +248,21 @@ func parseBlock(s string) []blockElement {
 		})
 	}
 
-	if isDetails && len(detailsContentLines) > 0 {
-		ret = append(ret, blockElement{
-			kind:               blockElementDetails,
-			detailsSummary:     detailsSummary,
-			detailsContentHTML: ToHTML(strings.Join(detailsContentLines, "\n")),
-		})
+	return ret
+}
+
+func findLine(lines []string, startIndex int, line string) int {
+	if startIndex >= len(lines) {
+		return -1
 	}
 
-	return ret
+	for i := startIndex; i < len(lines); i++ {
+		if lines[i] == line {
+			return i
+		}
+	}
+
+	return -1
 }
 
 func parseInlineTree(s string) inlineElement {

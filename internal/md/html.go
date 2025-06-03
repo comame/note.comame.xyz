@@ -71,7 +71,7 @@ func blockElementsToHTML(elements []blockElement) string {
 			if detailsSummary == "" {
 				detailsSummary = "詳細"
 			}
-			ret += fmt.Sprintf("<details><summary>%s</summary>%s</details>", html.EscapeString(detailsSummary), elements[i].detailsContentHTML)
+			ret += fmt.Sprintf("<details><summary>%s</summary>%s</details>", html.EscapeString(detailsSummary), blockElementsToHTML(elements[i].detailsContent))
 		case blockElementDescriptionListItem:
 			if !isInDescriptionList {
 				ret += "<dl>"
