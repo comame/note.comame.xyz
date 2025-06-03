@@ -21,14 +21,12 @@ func ToHTML(md string) string {
 }
 
 func parseBlock(s string) []blockElement {
-	return parseBlockInternal(&s)
+	lines := strings.Split(s, "\n")
+	b, _ := parseBlockInternal(lines, 0, "")
+	return b
 }
 
-func parseBlockInternal(s *string) []blockElement {
-	if s == nil {
-		panic("parseBlock: nil string")
-	}
-
+func parseBlockInternal(lines []string, startIndex int, terminate string) ([]blockElement, bool) {
 	var ret []blockElement
 
 	var paragraphBuffer string
@@ -47,7 +45,7 @@ func parseBlockInternal(s *string) []blockElement {
 	var descriptionTerm string
 	var descriptionTermOriginalLine string
 
-	for _, l := range strings.Split(*s, "\n") {
+	for _, l := range lines[startIndex:] {
 		// バッファに溜まってる文字を通常の段落として書き出す
 		flush := func() {
 			if paragraphBuffer != "" {
@@ -301,7 +299,8 @@ func parseBlockInternal(s *string) []blockElement {
 		})
 	}
 
-	return ret
+	// ループが回り切ったということは、terminateが見つからなかったということ
+	return ret, false
 }
 
 func parseInlineTree(s string) inlineElement {
