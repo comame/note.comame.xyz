@@ -45,6 +45,7 @@ Lorem ipsum
 
 :::details サマリ
 ::::details 内側のサマリ
+内側
 ::::
 ネストできる
 :::
