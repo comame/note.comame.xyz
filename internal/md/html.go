@@ -3,7 +3,6 @@ package md
 import (
 	"fmt"
 	"html"
-	"log"
 )
 
 func blockElementsToHTML(elements []blockElement) string {
@@ -72,7 +71,6 @@ func blockElementsToHTML(elements []blockElement) string {
 			if detailsSummary == "" {
 				detailsSummary = "詳細"
 			}
-			log.Println(elements[i].detailsContent)
 			ret += fmt.Sprintf("<details><summary>%s</summary>%s</details>", html.EscapeString(detailsSummary), blockElementsToHTML(elements[i].detailsContent))
 		case blockElementDescriptionListItem:
 			if !isInDescriptionList {

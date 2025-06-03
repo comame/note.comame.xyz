@@ -1,7 +1,6 @@
 package md
 
 import (
-	"log"
 	"regexp"
 	"strings"
 	"unicode"
@@ -122,7 +121,6 @@ func parseBlockInternal(lines []string) (ret []blockElement) {
 			detailsSummary := m[1]
 
 			blocksInDetails := parseBlockInternal(lines[i+1 : terminate])
-			log.Println(blocksInDetails)
 			ret = append(ret, blockElement{
 				kind:           blockElementDetails,
 				detailsSummary: detailsSummary,
