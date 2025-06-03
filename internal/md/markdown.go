@@ -21,6 +21,14 @@ func ToHTML(md string) string {
 }
 
 func parseBlock(s string) []blockElement {
+	return parseBlockInternal(&s)
+}
+
+func parseBlockInternal(s *string) []blockElement {
+	if s == nil {
+		panic("parseBlock: nil string")
+	}
+
 	var ret []blockElement
 
 	var paragraphBuffer string
@@ -39,7 +47,7 @@ func parseBlock(s string) []blockElement {
 	var descriptionTerm string
 	var descriptionTermOriginalLine string
 
-	for _, l := range strings.Split(s, "\n") {
+	for _, l := range strings.Split(*s, "\n") {
 		// バッファに溜まってる文字を通常の段落として書き出す
 		flush := func() {
 			if paragraphBuffer != "" {
