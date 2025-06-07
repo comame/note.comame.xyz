@@ -23,7 +23,6 @@ func Start() {
 	oidcClientID := os.Getenv("OIDC_CLIENT_ID")
 	oidcClientSecret := os.Getenv("OIDC_CLIENT_SECRET")
 	oidcRedirectURI := fmt.Sprintf("%s/login/oidc-callback", os.Getenv("ORIGIN"))
-	oidcAud := "note.comame.xyz"
 
 	oidc.InitializeDiscovery(oidcIssuer)
 	kvs := initKVS()
@@ -76,8 +75,9 @@ func Start() {
 			renderInternalServerError(nil, w)
 			return
 		}
-		p, err := oidc.CallbackCode(c.Value, r.URL.Query(), oidcClientID, oidcClientSecret, oidcRedirectURI, kvs, oidcAud)
+		p, err := oidc.CallbackCode(c.Value, r.URL.Query(), oidcClientID, oidcClientSecret, oidcRedirectURI, kvs, oidcClientID)
 		if err != nil {
+			log.Println(err)
 			renderInternalServerError(nil, w)
 			return
 		}
