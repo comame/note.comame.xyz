@@ -2,6 +2,8 @@ package server
 
 import (
 	"compress/gzip"
+	"crypto/md5"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"io"
@@ -11,6 +13,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"time"
 )
 
 func readJSONFromBody(r *http.Request, v any) error {
@@ -88,12 +91,8 @@ func renderNotFound(s *session, w http.ResponseWriter) {
 	renderTemplate(s, w, pageNotFound, "Not Found", nil)
 }
 
-func compressStaticHandler(d http.Dir) http.Handler {
+func staticHandler(d http.Dir) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Add("Content-Encoding", "gzip")
-		ct := mime.TypeByExtension(path.Ext(r.URL.Path))
-		w.Header().Add("Content-Type", ct)
-
 		f, err := d.Open(r.URL.Path)
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
@@ -101,24 +100,40 @@ func compressStaticHandler(d http.Dir) http.Handler {
 		}
 		defer f.Close()
 
-		gw, err := gzip.NewWriterLevel(w, gzip.BestSpeed)
+		// キャッシュ
+		w.Header().Add("Cache-Control", "no-cache")
+		stat, err := f.Stat()
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
 			log.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		defer gw.Close()
+		cacheKey := stat.ModTime().Format(time.RFC3339)
+		hash := base64.RawStdEncoding.EncodeToString(md5.New().Sum([]byte(cacheKey)))
+		reqEtag := r.Header.Get("If-None-Match")
+		if reqEtag == hash {
+			w.WriteHeader(http.StatusNotModified)
+			return
+		}
+		w.Header().Add("ETag", hash)
 
-		if _, err := io.Copy(gw, f); err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
+		// gzip encoding
+		w.Header().Add("Content-Encoding", "gzip")
+		contentType := mime.TypeByExtension(path.Ext(r.URL.Path))
+		w.Header().Add("Content-Type", contentType)
+
+		gz, err := gzip.NewWriterLevel(w, gzip.BestSpeed)
+		if err != nil {
 			log.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		defer gz.Close()
+
+		if _, err := io.Copy(gz, f); err != nil {
+			log.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 	})
-}
-
-func isCompressRequest(r *http.Request) bool {
-	e := path.Ext(r.URL.Path)
-
-	return e == ".wasm"
 }

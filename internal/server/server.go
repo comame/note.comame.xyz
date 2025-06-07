@@ -290,11 +290,7 @@ func Start() {
 			return
 		}
 
-		h := http.FileServer(http.Dir("out/dist"))
-		if isCompressRequest(r) {
-			h = compressStaticHandler(http.Dir("out/dist"))
-		}
-
+		h := staticHandler(http.Dir("out/dist"))
 		http.StripPrefix("/out/dist/", h).ServeHTTP(w, r)
 	})
 
@@ -305,11 +301,7 @@ func Start() {
 			return
 		}
 
-		h := http.FileServer(http.Dir("out/front/assets"))
-		if isCompressRequest(r) {
-			h = compressStaticHandler(http.Dir("out/dist/assets"))
-		}
-
+		h := staticHandler(http.Dir("out/front/assets"))
 		http.StripPrefix("/assets", h).ServeHTTP(w, r)
 	})
 
