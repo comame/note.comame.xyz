@@ -25,7 +25,7 @@ export default function PostPage({
         <div className="metadata-title">
           <h1 className="title">{post.title}</h1>
           <span className="c-visibility">
-            <StatusBadge size="m" status={post.permission} />
+            <StatusBadge size="m" status={post.resolvedPermission} />
           </span>
           {isLoggedIn && (
             <span className="edit-link">

@@ -39,7 +39,7 @@ export default function PostTable({ posts, isLoggedIn }: props) {
                 <td>
                   <StatusBadge
                     size="m"
-                    status={post.permission}
+                    status={post.resolvedPermission}
                     inherit={post.permissionInherited}
                   />
                 </td>

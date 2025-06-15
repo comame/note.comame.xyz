@@ -78,9 +78,9 @@ func (c *connection) transactionGuard() error {
 	return nil
 }
 
-func (c *connection) findPostByURLKey(ctx context.Context, urlKey string) (*post, error) {
+func (c *connection) findPostByURLKeyWithContent(ctx context.Context, urlKey string) (*post, error) {
 	rows, err := c.db.QueryContext(ctx, `
-		SELECT id, url_key, created_datetime, updated_datetime, title, text, permission
+		SELECT id, url_key, created_datetime, updated_datetime, title, text, permission, permission_inherited, parent
 		FROM nt_post
 		WHERE url_key = ?
 	`, urlKey)
@@ -94,16 +94,39 @@ func (c *connection) findPostByURLKey(ctx context.Context, urlKey string) (*post
 	}
 
 	p := new(post)
-	if err := rows.Scan(&p.ID, &p.URLKey, &p.CreatedDatetime, &p.UpdatedDatetime, &p.Title, &p.Text, &p.Permission); err != nil {
+	if err := rows.Scan(&p.ID, &p.URLKey, &p.CreatedDatetime, &p.UpdatedDatetime, &p.Title, &p.Text, &p.Permission, &p.PermissionInherited, &p.Parent); err != nil {
 		return nil, err
 	}
 
 	return p, nil
 }
 
-func (c *connection) findPostByID(ctx context.Context, id uint64) (*post, error) {
+// 記事の階層構造に関するカラムだけ取得する
+func (c *connection) getPartialPostHierarchyRelatedInfo(ctx context.Context, postID uint64) (partial *post, err error) {
 	rows, err := c.db.QueryContext(ctx, `
-		SELECT id, url_key, created_datetime, updated_datetime, title, text, permission
+		SELECT id, parent, title, url_key, permission, permission_inherited
+		FROM nt_post
+		WHERE id = ?
+	`, postID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	if !rows.Next() {
+		return nil, errNotFound
+	}
+
+	p := new(post)
+	if err := rows.Scan(&p.ID, &p.Parent, &p.Title, &p.URLKey, &p.Permission, &p.PermissionInherited); err != nil {
+		return nil, err
+	}
+	return p, nil
+}
+
+func (c *connection) findPostByIDWithContent(ctx context.Context, id uint64) (*post, error) {
+	rows, err := c.db.QueryContext(ctx, `
+		SELECT id, url_key, created_datetime, updated_datetime, title, text, permission, permission_inherited, parent
 		FROM nt_post
 		WHERE id = ?
 	`, id)
@@ -117,7 +140,7 @@ func (c *connection) findPostByID(ctx context.Context, id uint64) (*post, error)
 	}
 
 	p := new(post)
-	if err := rows.Scan(&p.ID, &p.URLKey, &p.CreatedDatetime, &p.UpdatedDatetime, &p.Title, &p.Text, &p.Permission); err != nil {
+	if err := rows.Scan(&p.ID, &p.URLKey, &p.CreatedDatetime, &p.UpdatedDatetime, &p.Title, &p.Text, &p.Permission, &p.PermissionInherited, &p.Parent); err != nil {
 		return nil, err
 	}
 
@@ -133,10 +156,10 @@ func (c *connection) createPost(ctx context.Context, post post) error {
 
 	if _, err := c.db.Exec(`
 		INSERT INTO nt_post
-		(url_key, created_datetime, updated_datetime, title, text, permission)
+		(url_key, created_datetime, updated_datetime, title, text, permission, permission_inherited, parent)
 		values
-		(?, ?, ?, ?, ?, ?)
-		`, post.URLKey, post.CreatedDatetime, post.UpdatedDatetime, post.Title, post.Text, post.Permission); err != nil {
+		(?, ?, ?, ?, ?, ?, ?, ?)
+		`, post.URLKey, post.CreatedDatetime, post.UpdatedDatetime, post.Title, post.Text, post.Permission, post.PermissionInherited, post.Parent); err != nil {
 		return err
 	}
 
@@ -156,7 +179,9 @@ func (c *connection) getAllPostsForAnonymous(ctx context.Context) ([]post, error
 			nt_post.updated_datetime,
 			nt_post.title,
 			nt_post.text,
-			nt_post.permission
+			nt_post.permission,
+			nt_post.permission_inherited,
+			nt_post.parent
 		FROM nt_post
 		WHERE permission = 'public'
 	`)
@@ -176,6 +201,8 @@ func (c *connection) getAllPostsForAnonymous(ctx context.Context) ([]post, error
 			&post.Title,
 			&post.Text,
 			&post.Permission,
+			&post.PermissionInherited,
+			&post.Parent,
 		); err != nil {
 			return nil, err
 		}
@@ -194,7 +221,9 @@ func (c *connection) getAllPostsForAdmin(ctx context.Context) ([]post, error) {
 			nt_post.updated_datetime,
 			nt_post.title,
 			nt_post.text,
-			nt_post.permission
+			nt_post.permission,
+			nt_post.permission_inherited,
+			nt_post.parent
 		FROM nt_post
 	`)
 	if err != nil {
@@ -213,6 +242,8 @@ func (c *connection) getAllPostsForAdmin(ctx context.Context) ([]post, error) {
 			&post.Title,
 			&post.Text,
 			&post.Permission,
+			&post.PermissionInherited,
+			&post.Parent,
 		); err != nil {
 			return nil, err
 		}
@@ -233,10 +264,12 @@ func (c *connection) updatePostInTransaction(ctx context.Context, post post) err
 			updated_datetime = ?,
 			title = ?,
 			text = ?,
-			permission = ?
+			permission = ?,
+			permission_inherited = ?,
+			parent = ?
 		WHERE
 			id = ?
-	`, post.UpdatedDatetime, post.Title, post.Text, post.Permission, post.ID)
+	`, post.UpdatedDatetime, post.Title, post.Text, post.Permission, post.PermissionInherited, post.Parent, post.ID)
 	if err != nil {
 		return err
 	}
@@ -290,7 +323,9 @@ func (c *connection) copyPostToPostLogInTransaction(ctx context.Context, postID 
 			created_datetime,
 			updated_datetime,
 			text,
-			permission
+			permission,
+			permission_inherited,
+			parent
 		)
 		SELECT
 			id,
@@ -298,7 +333,9 @@ func (c *connection) copyPostToPostLogInTransaction(ctx context.Context, postID 
 			created_datetime,
 			updated_datetime,
 			text,
-			permission
+			permission,
+			permission_inherited,
+			parent
 		FROM nt_post
 		WHERE nt_post.id = ?
 	`, postID); err != nil {

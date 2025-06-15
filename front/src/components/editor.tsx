@@ -10,7 +10,7 @@ interface props {
   editPost?: {
     title: string;
     text: string;
-    permission: permission;
+    resolvedPermission: permission;
     id: number;
   };
   demoMode?: boolean;
@@ -35,7 +35,7 @@ export default function Editor({ onSubmit, editPost, demoMode }: props) {
     });
   }, [editPost]);
 
-  const defaultPermission = editPost?.permission ?? "private";
+  const defaultPermission = editPost?.resolvedPermission ?? "private";
 
   const onSubmitHandler = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();

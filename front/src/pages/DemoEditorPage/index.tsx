@@ -6,7 +6,7 @@ export default function NewPostPage() {
   const post = {
     text: specMD,
     title: "Markdown エディタ",
-    permission: "public",
+    resolvedPermission: "public",
     id: 0,
   } as const;
 
