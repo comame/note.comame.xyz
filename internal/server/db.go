@@ -94,7 +94,7 @@ func (c *connection) findPostByURLKeyWithContent(ctx context.Context, urlKey str
 	}
 
 	p := new(post)
-	if err := rows.Scan(&p.ID, &p.URLKey, &p.CreatedDatetime, &p.UpdatedDatetime, &p.Title, &p.Text, &p.permission, &p.PermissionInherited, &p.Parent); err != nil {
+	if err := rows.Scan(&p.ID, &p.URLKey, &p.CreatedDatetime, &p.UpdatedDatetime, &p.Title, &p.Text, &p.Permission, &p.PermissionInherited, &p.Parent); err != nil {
 		return nil, err
 	}
 
@@ -118,7 +118,7 @@ func (c *connection) getPartialPostHierarchyRelatedInfo(ctx context.Context, pos
 	}
 
 	p := new(post)
-	if err := rows.Scan(&p.ID, &p.Parent, &p.Title, &p.URLKey, &p.permission, &p.PermissionInherited); err != nil {
+	if err := rows.Scan(&p.ID, &p.Parent, &p.Title, &p.URLKey, &p.Permission, &p.PermissionInherited); err != nil {
 		return nil, err
 	}
 	return p, nil
@@ -140,7 +140,7 @@ func (c *connection) findPostByIDWithContent(ctx context.Context, id uint64) (*p
 	}
 
 	p := new(post)
-	if err := rows.Scan(&p.ID, &p.URLKey, &p.CreatedDatetime, &p.UpdatedDatetime, &p.Title, &p.Text, &p.permission, &p.PermissionInherited, &p.Parent); err != nil {
+	if err := rows.Scan(&p.ID, &p.URLKey, &p.CreatedDatetime, &p.UpdatedDatetime, &p.Title, &p.Text, &p.Permission, &p.PermissionInherited, &p.Parent); err != nil {
 		return nil, err
 	}
 
@@ -159,7 +159,7 @@ func (c *connection) createPost(ctx context.Context, post post) error {
 		(url_key, created_datetime, updated_datetime, title, text, permission, permission_inherited, parent)
 		values
 		(?, ?, ?, ?, ?, ?, ?, ?)
-		`, post.URLKey, post.CreatedDatetime, post.UpdatedDatetime, post.Title, post.Text, post.permission, post.PermissionInherited, post.Parent); err != nil {
+		`, post.URLKey, post.CreatedDatetime, post.UpdatedDatetime, post.Title, post.Text, post.Permission, post.PermissionInherited, post.Parent); err != nil {
 		return err
 	}
 
@@ -200,7 +200,7 @@ func (c *connection) getAllPostsForAnonymous(ctx context.Context) ([]post, error
 			&post.UpdatedDatetime,
 			&post.Title,
 			&post.Text,
-			&post.permission,
+			&post.Permission,
 			&post.PermissionInherited,
 			&post.Parent,
 		); err != nil {
@@ -241,7 +241,7 @@ func (c *connection) getAllPostsForAdmin(ctx context.Context) ([]post, error) {
 			&post.UpdatedDatetime,
 			&post.Title,
 			&post.Text,
-			&post.permission,
+			&post.Permission,
 			&post.PermissionInherited,
 			&post.Parent,
 		); err != nil {
@@ -269,7 +269,7 @@ func (c *connection) updatePostInTransaction(ctx context.Context, post post) err
 			parent = ?
 		WHERE
 			id = ?
-	`, post.UpdatedDatetime, post.Title, post.Text, post.permission, post.PermissionInherited, post.Parent, post.ID)
+	`, post.UpdatedDatetime, post.Title, post.Text, post.Permission, post.PermissionInherited, post.Parent, post.ID)
 	if err != nil {
 		return err
 	}

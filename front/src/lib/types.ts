@@ -9,7 +9,7 @@ export type post = {
   updatedDatetime: string;
   title: string;
   permissionInherited: boolean;
-  permission: permission;
+  resolvedPermission: permission;
   text: string;
   html: string;
 };

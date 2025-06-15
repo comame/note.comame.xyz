@@ -20,9 +20,9 @@ type post struct {
 	Parent              uint64 `json:"parent"` // 最上位記事なら0
 
 	// フロントエンド用の値であり、getPermissionするとセットされる。サーバー側ではこのフィールドを参照せずに、post.getPermission() を呼び出すこと。
-	ResolvedPermission permission `json:"permission"`
+	ResolvedPermission permission `json:"resolvedPermission"`
 	// この記事に設定された権限。権限を取得するには post.getPermission() を呼び出すこと。
-	permission permission
+	Permission permission `json:"permission"`
 
 	// 階層構造の取得は重たいので、そのキャッシュ用の内部的なフィールド。
 	// 詳細については fetchHierarchy を参照。
@@ -89,8 +89,8 @@ func (p *post) getPermission(ctx context.Context) (permission, error) {
 	}
 	for _, h := range p.hierarchy {
 		if !h.PermissionInherited || h.Parent == 0 {
-			p.ResolvedPermission = h.permission
-			return h.permission, nil
+			p.ResolvedPermission = h.Permission
+			return h.Permission, nil
 		}
 	}
 	return "", errors.New("階層構造がおかしい")
