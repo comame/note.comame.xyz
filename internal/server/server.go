@@ -327,7 +327,9 @@ func Start() {
 	})
 
 	log.Println("start http://0.0.0.0:8080")
-	http.ListenAndServe(":8080", http.DefaultServeMux)
+	if err := http.ListenAndServe(":8080", http.DefaultServeMux); err != nil {
+		panic(err)
+	}
 }
 
 type redirectResponse struct {
