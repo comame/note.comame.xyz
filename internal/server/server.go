@@ -29,16 +29,14 @@ func Start() {
 	// === ログイン専用 ===
 	http.HandleFunc("GET /new", handleNewPostPage(kvs))
 	http.HandleFunc("POST /post/create", handleCreatePost(kvs))
-	http.HandleFunc("GET /posts/private/{url_key}", handlePrivatePostPage(kvs))
 	http.HandleFunc("GET /edit/post/{post_id}", handleEditPostPage(kvs))
 	http.HandleFunc("POST /edit/post/{post_id}", handleEditPost(kvs))
 	http.HandleFunc("POST /delete/post/{post_id}", handleDeletePost(kvs))
 
 	// === 誰でもアクセス可能 ===
 	http.HandleFunc("GET /all", handleAllPostsPage(kvs))
+	http.HandleFunc("GET /posts/{url_key}", handlePostPage(kvs))
 	http.HandleFunc("GET /editor/demo", handleDemoEditorPage(kvs))
-	http.HandleFunc("GET /posts/unlisted/{url_key}", handleUnlistedPostPage(kvs))
-	http.HandleFunc("GET /posts/public/{url_key}", handlePublicPostPage(kvs))
 	http.HandleFunc("GET /static/", handleStatic(kvs))
 	http.HandleFunc("GET /out/dist/", handleOutDist(kvs))
 	http.HandleFunc("GET /assets/", handleAssets(kvs))

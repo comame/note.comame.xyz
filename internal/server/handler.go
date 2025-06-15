@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/comame/note.comame.xyz/internal/oidc"
 )
@@ -104,10 +103,10 @@ func handleCreatePost(kvs *kvs) http.HandlerFunc {
 	}
 }
 
-func handlePrivatePostPage(kvs *kvs) http.HandlerFunc {
+func handlePostPage(kvs *kvs) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		setCommonHeaders(w)
-		s, ok := validateRequest(true, r, kvs)
+		s, ok := validateRequest(false, r, kvs)
 		if !ok {
 			renderBadRequest(nil, w)
 			return
@@ -136,7 +135,7 @@ func handleEditPostPage(kvs *kvs) http.HandlerFunc {
 			renderInternalServerError(s, w)
 			return
 		}
-		p, err := con.findPostByID(r.Context(), id)
+		p, err := con.findPostByIDWithContent(r.Context(), id)
 		if err != nil && errors.Is(err, errNotFound) {
 			renderNotFound(s, w)
 			return
@@ -175,7 +174,7 @@ func handleEditPost(kvs *kvs) http.HandlerFunc {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		p2, err := getPostByID(r.Context(), id, p.Permission)
+		p2, err := getPostByID(r.Context(), id, true)
 		if err != nil {
 			log.Println(err)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -222,30 +221,6 @@ func handleDemoEditorPage(kvs *kvs) http.HandlerFunc {
 			return
 		}
 		renderTemplate(s, w, pageDemoEditor, "エディタ", joinBreadcrumbs(), nil)
-	}
-}
-
-func handleUnlistedPostPage(kvs *kvs) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		setCommonHeaders(w)
-		s, ok := validateRequest(false, r, kvs)
-		if !ok {
-			renderBadRequest(nil, w)
-			return
-		}
-		postPage(w, r, s)
-	}
-}
-
-func handlePublicPostPage(kvs *kvs) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		setCommonHeaders(w)
-		s, ok := validateRequest(false, r, kvs)
-		if !ok {
-			renderBadRequest(nil, w)
-			return
-		}
-		postPage(w, r, s)
 	}
 }
 
@@ -313,30 +288,15 @@ type redirectResponse struct {
 
 // 記事ページの共通ハンドラ
 func postPage(w http.ResponseWriter, r *http.Request, s *session) {
-	var v permission
-	switch strings.Split(r.URL.Path, "/")[2] {
-	case "private":
-		v = permissionPrivate
-	case "unlisted":
-		v = permissionURL
-	case "public":
-		v = permissionPublic
-	}
-
 	key := r.PathValue("url_key")
 
-	p, err := getPostByURLKey(r.Context(), key, v)
+	p, err := getAllowedPostByURLKey(r.Context(), key, s.isLoggedIn())
 	if err != nil && errors.Is(err, errNotFound) {
 		renderNotFound(s, w)
 		return
 	}
 	if err != nil {
 		renderInternalServerError(s, w)
-		return
-	}
-
-	if p.Permission != v {
-		renderNotFound(s, w)
 		return
 	}
 
