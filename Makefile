@@ -18,7 +18,7 @@ static_files: clean wasm front
 
 .PHONY: front
 front: wasm
-	cd front && npm ci && npm run build
+	cd front && bash -ic 'npm ci && npm run build'
 
 .PHONY: wasm
 wasm:

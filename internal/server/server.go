@@ -23,7 +23,6 @@ func Start() {
 	oidcClientID := os.Getenv("OIDC_CLIENT_ID")
 	oidcClientSecret := os.Getenv("OIDC_CLIENT_SECRET")
 	oidcRedirectURI := fmt.Sprintf("%s/login/oidc-callback", os.Getenv("ORIGIN"))
-	oidcAud := "note.comame.xyz"
 
 	oidc.InitializeDiscovery(oidcIssuer)
 	kvs := initKVS()
@@ -76,8 +75,9 @@ func Start() {
 			renderInternalServerError(nil, w)
 			return
 		}
-		p, err := oidc.CallbackCode(c.Value, r.URL.Query(), oidcClientID, oidcClientSecret, oidcRedirectURI, kvs, oidcAud)
+		p, err := oidc.CallbackCode(c.Value, r.URL.Query(), oidcClientID, oidcClientSecret, oidcRedirectURI, kvs, oidcClientID)
 		if err != nil {
+			log.Println(err)
 			renderInternalServerError(nil, w)
 			return
 		}
@@ -290,11 +290,7 @@ func Start() {
 			return
 		}
 
-		h := http.FileServer(http.Dir("out/dist"))
-		if isCompressRequest(r) {
-			h = compressStaticHandler(http.Dir("out/dist"))
-		}
-
+		h := staticHandler(http.Dir("out/dist"))
 		http.StripPrefix("/out/dist/", h).ServeHTTP(w, r)
 	})
 
@@ -305,11 +301,7 @@ func Start() {
 			return
 		}
 
-		h := http.FileServer(http.Dir("out/front/assets"))
-		if isCompressRequest(r) {
-			h = compressStaticHandler(http.Dir("out/dist/assets"))
-		}
-
+		h := staticHandler(http.Dir("out/front/assets"))
 		http.StripPrefix("/assets", h).ServeHTTP(w, r)
 	})
 
@@ -335,7 +327,9 @@ func Start() {
 	})
 
 	log.Println("start http://0.0.0.0:8080")
-	http.ListenAndServe(":8080", http.DefaultServeMux)
+	if err := http.ListenAndServe(":8080", http.DefaultServeMux); err != nil {
+		panic(err)
+	}
 }
 
 type redirectResponse struct {

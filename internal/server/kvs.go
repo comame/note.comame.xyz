@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -16,11 +17,13 @@ type kvs struct {
 }
 
 func initKVS() *kvs {
+	addr := os.Getenv("REDIS_ADDR")
+
 	return &kvs{
 		n:   make(map[string]string),
 		ses: make(map[string]string),
 		db: redis.NewClient(&redis.Options{
-			Addr: "redis.comame.dev:6379",
+			Addr: addr,
 		}),
 	}
 }

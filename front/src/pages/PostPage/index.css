@@ -1,5 +1,9 @@
 .pages-post {
   #post {
+    max-width: var(--max-page-width);
+    margin-right: auto;
+    margin-left: auto;
+
     .title {
       margin: 16px;
     }

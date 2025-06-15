@@ -1,9 +1,9 @@
 import "./index.css";
 import PostTable from "../../components/post_table";
-import type { post } from "../../lib/types";
+import type { goArr, post } from "../../lib/types";
 
 type pageData = {
-  posts: post[];
+  posts: goArr<post>;
 };
 
 type props = {
@@ -16,7 +16,7 @@ export default function AllPostsPage({ pageData, isLoggedIn }: props) {
 
   return (
     <div className="page-all-posts">
-      <PostTable posts={posts} isLoggedIn={isLoggedIn} />
+      <PostTable posts={posts ?? []} isLoggedIn={isLoggedIn} />
     </div>
   );
 }

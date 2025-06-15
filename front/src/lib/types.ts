@@ -1,5 +1,7 @@
 export type permission = "public" | "private" | "url";
 
+export type goArr<T> = null | T[];
+
 export type post = {
   id: number;
   url_key: string;
