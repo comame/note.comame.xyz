@@ -1,15 +1,10 @@
 package server
 
 import (
-	_ "embed"
-	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
-	"strconv"
-	"strings"
 
 	"github.com/comame/note.comame.xyz/internal/oidc"
 
@@ -27,382 +22,31 @@ func Start() {
 	oidc.InitializeDiscovery(oidcIssuer)
 	kvs := initKVS()
 
-	// ログインを開始する
-	http.HandleFunc("GET /login", func(w http.ResponseWriter, r *http.Request) {
-		setCommonHeaders(w)
-		if _, ok := validateRequest(false, r, kvs); !ok {
-			renderBadRequest(nil, w)
-			return
-		}
-
-		u, s, err := oidc.GenerateAuthenticationRequestUrl(oidcClientID, oidcRedirectURI, kvs)
-		if err != nil {
-			renderInternalServerError(nil, w)
-			return
-		}
-
-		http.SetCookie(w, &http.Cookie{
-			Name:     "state",
-			Value:    s,
-			MaxAge:   600,
-			Secure:   true,
-			HttpOnly: true,
-		})
-
-		http.Redirect(w, r, u, http.StatusFound)
-	})
-
-	http.HandleFunc("GET /logout", func(w http.ResponseWriter, r *http.Request) {
-		setCommonHeaders(w)
-		if _, ok := validateRequest(false, r, kvs); !ok {
-			renderBadRequest(nil, w)
-			return
-		}
-
-		destroySession(w, r, kvs)
-		http.Redirect(w, r, "/", http.StatusFound)
-	})
-
-	http.HandleFunc("GET /login/oidc-callback", func(w http.ResponseWriter, r *http.Request) {
-		setCommonHeaders(w)
-		if _, ok := validateRequest(false, r, kvs); !ok {
-			renderBadRequest(nil, w)
-			return
-		}
-
-		c, err := r.Cookie("state")
-		if err != nil {
-			renderInternalServerError(nil, w)
-			return
-		}
-		p, err := oidc.CallbackCode(c.Value, r.URL.Query(), oidcClientID, oidcClientSecret, oidcRedirectURI, kvs, oidcClientID)
-		if err != nil {
-			log.Println(err)
-			renderInternalServerError(nil, w)
-			return
-		}
-
-		startNewSession(w, p.Sub, kvs)
-		http.Redirect(w, r, "/", http.StatusFound)
-	})
+	http.HandleFunc("GET /login", handleLogin(kvs, oidcClientID, oidcRedirectURI))
+	http.HandleFunc("GET /logout", handleLogout(kvs))
+	http.HandleFunc("GET /login/oidc-callback", handleOIDCCallback(kvs, oidcClientID, oidcClientSecret, oidcRedirectURI))
 
 	// === ログイン専用 ===
-
-	http.HandleFunc("GET /new", func(w http.ResponseWriter, r *http.Request) {
-		setCommonHeaders(w)
-		s, ok := validateRequest(true, r, kvs)
-		if !ok {
-			renderBadRequest(s, w)
-			return
-		}
-
-		renderTemplate(s, w, pageNewPost, "記事を作成", struct{}{})
-	})
-
-	http.HandleFunc("POST /post/create", func(w http.ResponseWriter, r *http.Request) {
-		setCommonHeaders(w)
-		s, ok := validateRequest(true, r, kvs)
-		if !ok {
-			renderBadRequest(s, w)
-			return
-		}
-
-		var p1 post
-		if err := readJSONFromBody(r, &p1); err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		p2, err := createPost(r.Context(), p1)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
-		j, _ := json.Marshal(redirectResponse{Location: p2.getURL()})
-		w.Write(j)
-	})
-
-	http.HandleFunc("GET /posts/private/{url_key}", func(w http.ResponseWriter, r *http.Request) {
-		setCommonHeaders(w)
-		s, ok := validateRequest(true, r, kvs)
-		if !ok {
-			renderBadRequest(nil, w)
-			return
-		}
-
-		postPage(w, r, s)
-	})
-
-	http.HandleFunc("GET /edit/post/{post_id}", func(w http.ResponseWriter, r *http.Request) {
-		setCommonHeaders(w)
-		s, ok := validateRequest(true, r, kvs)
-		if !ok {
-			renderBadRequest(nil, w)
-			return
-		}
-
-		idStr := r.PathValue("post_id")
-		id, err := strconv.ParseUint(idStr, 10, 64)
-		if err != nil {
-			renderBadRequest(s, w)
-			return
-		}
-
-		con, err := GetConnection()
-		if err != nil {
-			log.Println(err)
-			renderInternalServerError(s, w)
-			return
-		}
-
-		p, err := con.findPostByID(r.Context(), id)
-		if err != nil && errors.Is(err, errNotFound) {
-			renderNotFound(s, w)
-			return
-		}
-
-		log.Println(p)
-
-		renderTemplate(s, w, pageEditPost, "記事を編集", editPostPageData{
-			Post: *p,
-		})
-	})
-
-	http.HandleFunc("POST /edit/post/{post_id}", func(w http.ResponseWriter, r *http.Request) {
-		setCommonHeaders(w)
-		if _, ok := validateRequest(true, r, kvs); !ok {
-			renderBadRequest(nil, w)
-			return
-		}
-
-		var p post
-		if err := readJSONFromBody(r, &p); err != nil {
-			log.Println(err)
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		idStr := r.PathValue("post_id")
-		id, err := strconv.ParseUint(idStr, 10, 64)
-		if err != nil {
-			log.Println(err)
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		if p.ID != id {
-			log.Println(p.ID, id)
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		if err := updatePost(r.Context(), p); err != nil {
-			log.Println(err)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
-		p2, err := getPostByID(r.Context(), id, p.Permission)
-		if err != nil {
-			log.Println(err)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
-		j, _ := json.Marshal(redirectResponse{Location: p2.getURL()})
-		w.Write(j)
-	})
-
-	http.HandleFunc("POST /delete/post/{post_id}", func(w http.ResponseWriter, r *http.Request) {
-		setCommonHeaders(w)
-		if _, ok := validateRequest(true, r, kvs); !ok {
-			renderBadRequest(nil, w)
-			return
-		}
-
-		idStr := r.PathValue("post_id")
-		id, err := strconv.ParseUint(idStr, 10, 64)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		if err := deletePost(r.Context(), id); err != nil {
-			log.Println(err)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-	})
+	http.HandleFunc("GET /new", handleNewPostPage(kvs))
+	http.HandleFunc("POST /post/create", handleCreatePost(kvs))
+	http.HandleFunc("GET /posts/private/{url_key}", handlePrivatePostPage(kvs))
+	http.HandleFunc("GET /edit/post/{post_id}", handleEditPostPage(kvs))
+	http.HandleFunc("POST /edit/post/{post_id}", handleEditPost(kvs))
+	http.HandleFunc("POST /delete/post/{post_id}", handleDeletePost(kvs))
 
 	// === 誰でもアクセス可能 ===
-
-	http.HandleFunc("GET /all", func(w http.ResponseWriter, r *http.Request) {
-		postListPage(w, r, kvs)
-	})
-
-	http.HandleFunc("GET /editor/demo", func(w http.ResponseWriter, r *http.Request) {
-		setCommonHeaders(w)
-		s, ok := validateRequest(false, r, kvs)
-		if !ok {
-			renderBadRequest(nil, w)
-			return
-		}
-
-		renderTemplate(s, w, pageDemoEditor, "エディタ", nil)
-	})
-
-	http.HandleFunc("GET /posts/unlisted/{url_key}", func(w http.ResponseWriter, r *http.Request) {
-		setCommonHeaders(w)
-		s, ok := validateRequest(false, r, kvs)
-		if !ok {
-			renderBadRequest(nil, w)
-			return
-		}
-
-		postPage(w, r, s)
-	})
-
-	http.HandleFunc("GET /posts/public/{url_key}", func(w http.ResponseWriter, r *http.Request) {
-		setCommonHeaders(w)
-		s, ok := validateRequest(false, r, kvs)
-		if !ok {
-			renderBadRequest(nil, w)
-			return
-		}
-
-		postPage(w, r, s)
-	})
-
-	http.HandleFunc("GET /static/", func(w http.ResponseWriter, r *http.Request) {
-		setCommonHeaders(w)
-		if _, ok := validateRequest(false, r, kvs); !ok {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		http.StripPrefix("/static/", http.FileServer(http.Dir("static"))).ServeHTTP(w, r)
-	})
-
-	http.HandleFunc("GET /out/dist/", func(w http.ResponseWriter, r *http.Request) {
-		setCommonHeaders(w)
-		if _, ok := validateRequest(false, r, kvs); !ok {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		h := staticHandler(http.Dir("out/dist"))
-		http.StripPrefix("/out/dist/", h).ServeHTTP(w, r)
-	})
-
-	http.HandleFunc("GET /assets/", func(w http.ResponseWriter, r *http.Request) {
-		setCommonHeaders(w)
-		if _, ok := validateRequest(false, r, kvs); !ok {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		h := staticHandler(http.Dir("out/front/assets"))
-		http.StripPrefix("/assets", h).ServeHTTP(w, r)
-	})
-
-	http.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
-		postListPage(w, r, kvs)
-	})
-
-	http.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
-		setCommonHeaders(w)
-		s, ok := validateRequest(false, r, kvs)
-		if !ok {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		if isPageRequest(r) {
-			renderNotFound(s, w)
-			return
-		}
-
-		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte("Not found"))
-	})
+	http.HandleFunc("GET /all", handleAllPostsPage(kvs))
+	http.HandleFunc("GET /editor/demo", handleDemoEditorPage(kvs))
+	http.HandleFunc("GET /posts/unlisted/{url_key}", handleUnlistedPostPage(kvs))
+	http.HandleFunc("GET /posts/public/{url_key}", handlePublicPostPage(kvs))
+	http.HandleFunc("GET /static/", handleStatic(kvs))
+	http.HandleFunc("GET /out/dist/", handleOutDist(kvs))
+	http.HandleFunc("GET /assets/", handleAssets(kvs))
+	http.HandleFunc("GET /{$}", handleRootPage(kvs))
+	http.HandleFunc("GET /", handleNotFound(kvs))
 
 	log.Println("start http://0.0.0.0:8080")
 	if err := http.ListenAndServe(":8080", http.DefaultServeMux); err != nil {
 		panic(err)
 	}
-}
-
-type redirectResponse struct {
-	Location string `json:"location"`
-}
-
-func postPage(w http.ResponseWriter, r *http.Request, s *session) {
-	var v permission
-	switch strings.Split(r.URL.Path, "/")[2] {
-	case "private":
-		v = permissionPrivate
-	case "unlisted":
-		v = permissionURL
-	case "public":
-		v = permissionPublic
-	}
-
-	key := r.PathValue("url_key")
-
-	p, err := getPostByURLKey(r.Context(), key, v)
-	if err != nil && errors.Is(err, errNotFound) {
-		renderNotFound(s, w)
-		return
-	}
-	if err != nil {
-		renderInternalServerError(s, w)
-		return
-	}
-
-	if p.Permission != v {
-		renderNotFound(s, w)
-		return
-	}
-
-	renderTemplate(s, w, pagePost, p.Title+" | note.comame.xyz", postPageData{
-		Post: *p,
-	})
-}
-
-func postListPage(w http.ResponseWriter, r *http.Request, kvs *kvs) {
-	setCommonHeaders(w)
-	s, ok := validateRequest(false, r, kvs)
-	if !ok {
-		renderBadRequest(nil, w)
-		return
-	}
-
-	con, err := GetConnection()
-	if err != nil {
-		log.Println(err)
-		renderInternalServerError(s, w)
-		return
-	}
-
-	var p []post
-
-	if s.isLoggedIn() {
-		p, err = con.getAllPostsForAdmin(r.Context())
-		if err != nil {
-			log.Println(err)
-			renderInternalServerError(s, w)
-			return
-		}
-	} else {
-		p, err = con.getAllPostsForAnonymous(r.Context())
-		if err != nil {
-			log.Println(err)
-			renderInternalServerError(s, w)
-			return
-		}
-	}
-
-	renderTemplate(s, w, pageAllPosts, "記事一覧", allPostsPageData{
-		Posts: p,
-	})
 }

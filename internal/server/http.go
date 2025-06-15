@@ -78,17 +78,17 @@ func isPageRequest(r *http.Request) bool {
 
 func renderBadRequest(s *session, w http.ResponseWriter) {
 	w.WriteHeader(http.StatusBadRequest)
-	renderTemplate(s, w, pageNotFound, "エラー", nil)
+	renderTemplate(s, w, pageNotFound, "エラー", joinBreadcrumbs(), nil)
 }
 
 func renderInternalServerError(s *session, w http.ResponseWriter) {
 	w.WriteHeader(http.StatusInternalServerError)
-	renderTemplate(s, w, pageNotFound, "エラー", nil)
+	renderTemplate(s, w, pageNotFound, "エラー", joinBreadcrumbs(), nil)
 }
 
 func renderNotFound(s *session, w http.ResponseWriter) {
 	w.WriteHeader(http.StatusNotFound)
-	renderTemplate(s, w, pageNotFound, "Not Found", nil)
+	renderTemplate(s, w, pageNotFound, "Not Found", joinBreadcrumbs(), nil)
 }
 
 func staticHandler(d http.Dir) http.Handler {
