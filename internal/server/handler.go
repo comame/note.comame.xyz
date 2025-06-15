@@ -316,29 +316,11 @@ func postListPage(w http.ResponseWriter, r *http.Request, kvs *kvs) {
 		return
 	}
 
-	con, err := GetConnection()
+	p, err := listPost(r.Context(), s.isLoggedIn())
 	if err != nil {
 		log.Println(err)
-		renderInternalServerError(s, w)
+		renderBadRequest(s, w)
 		return
-	}
-
-	var p []post
-
-	if s.isLoggedIn() {
-		p, err = con.getAllPostsForAdmin(r.Context())
-		if err != nil {
-			log.Println(err)
-			renderInternalServerError(s, w)
-			return
-		}
-	} else {
-		p, err = con.getAllPostsForAnonymous(r.Context())
-		if err != nil {
-			log.Println(err)
-			renderInternalServerError(s, w)
-			return
-		}
 	}
 
 	renderTemplate(s, w, pageAllPosts, "記事一覧", joinBreadcrumbs(), allPostsPageData{

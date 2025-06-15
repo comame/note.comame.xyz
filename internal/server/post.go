@@ -9,16 +9,20 @@ import (
 )
 
 type post struct {
-	ID                  uint64     `json:"id"`
-	URLKey              string     `json:"url_key"`
-	CreatedDatetime     string     `json:"createdDatetime"`
-	UpdatedDatetime     string     `json:"updatedDatetime"`
-	Title               string     `json:"title"`
-	Text                string     `json:"text"`
-	HTML                string     `json:"html"`
-	Permission          permission `json:"permission"` // PermissionInheritedがtrueの時は参照してはならない FIXME: 誤ってフロントエンドでこのカラムを参照しないようにする
-	PermissionInherited bool       `json:"permissionInherited"`
-	Parent              uint64     `json:"parent"` // 最上位記事なら0
+	ID                  uint64 `json:"id"`
+	URLKey              string `json:"url_key"`
+	CreatedDatetime     string `json:"createdDatetime"`
+	UpdatedDatetime     string `json:"updatedDatetime"`
+	Title               string `json:"title"`
+	Text                string `json:"text"`
+	HTML                string `json:"html"`
+	PermissionInherited bool   `json:"permissionInherited"`
+	Parent              uint64 `json:"parent"` // 最上位記事なら0
+
+	// フロントエンド用の値であり、getPermissionするとセットされる。サーバー側ではこのフィールドを参照せずに、post.getPermission() を呼び出すこと。
+	ResolvedPermission permission `json:"permission"`
+	// この記事に設定された権限。権限を取得するには post.getPermission() を呼び出すこと。
+	permission permission
 
 	// 階層構造の取得は重たいので、そのキャッシュ用の内部的なフィールド。
 	// 詳細については fetchHierarchy を参照。
@@ -78,14 +82,15 @@ func (p *post) fetchHierarchy(ctx context.Context) error {
 	return errors.New("記事の階層構造が深すぎる")
 }
 
+// 親記事をたどって権限を取得
 func (p *post) getPermission(ctx context.Context) (permission, error) {
 	if err := p.fetchHierarchy(ctx); err != nil {
 		return "", err
 	}
-	// p.hierarchy[0]が自身、末尾が最上位
 	for _, h := range p.hierarchy {
 		if !h.PermissionInherited || h.Parent == 0 {
-			return h.Permission, nil
+			p.ResolvedPermission = h.permission
+			return h.permission, nil
 		}
 	}
 	return "", errors.New("階層構造がおかしい")
@@ -116,6 +121,7 @@ func (p *post) isAllowedToView(ctx context.Context, isLoggedIn bool) (bool, erro
 	return false, nil
 }
 
+// 閲覧権限のある記事を取得
 func getPostByID(ctx context.Context, id uint64, isLoggedIn bool) (*post, error) {
 	c, err := GetConnection()
 	if err != nil {
@@ -254,4 +260,32 @@ func deletePost(ctx context.Context, postID uint64) error {
 	}
 
 	return nil
+}
+
+func listPost(ctx context.Context, isLoggedIn bool) ([]post, error) {
+	con, err := GetConnection()
+	if err != nil {
+		return nil, err
+	}
+
+	var posts []post
+	if isLoggedIn {
+		posts, err = con.getAllPostsForAdmin(ctx)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		posts, err = con.getAllPostsForAnonymous(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	for i := range posts {
+		// .ResolvedPermission フィールドをセットするために呼び出しておく
+		// FIXME: この処理はまあまあ重たいので何とかしたほうがよさそう
+		posts[i].getPermission(ctx)
+	}
+
+	return posts, nil
 }
