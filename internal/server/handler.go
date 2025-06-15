@@ -77,7 +77,7 @@ func handleNewPostPage(kvs *kvs) http.HandlerFunc {
 			renderBadRequest(s, w)
 			return
 		}
-		renderTemplate(s, w, pageNewPost, "記事を作成", struct{}{})
+		renderTemplate(s, w, pageNewPost, "記事を作成", joinBreadcrumbs(), struct{}{})
 	}
 }
 
@@ -142,7 +142,7 @@ func handleEditPostPage(kvs *kvs) http.HandlerFunc {
 			return
 		}
 		log.Println(p)
-		renderTemplate(s, w, pageEditPost, "記事を編集", editPostPageData{Post: *p})
+		renderTemplate(s, w, pageEditPost, "記事を編集", joinBreadcrumbs(), editPostPageData{Post: *p})
 	}
 }
 
@@ -167,7 +167,6 @@ func handleEditPost(kvs *kvs) http.HandlerFunc {
 			return
 		}
 		if p.ID != id {
-			log.Println(p.ID, id)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
@@ -222,7 +221,7 @@ func handleDemoEditorPage(kvs *kvs) http.HandlerFunc {
 			renderBadRequest(nil, w)
 			return
 		}
-		renderTemplate(s, w, pageDemoEditor, "エディタ", nil)
+		renderTemplate(s, w, pageDemoEditor, "エディタ", joinBreadcrumbs(), nil)
 	}
 }
 
@@ -341,7 +340,10 @@ func postPage(w http.ResponseWriter, r *http.Request, s *session) {
 		return
 	}
 
-	renderTemplate(s, w, pagePost, p.Title+" | note.comame.xyz", postPageData{
+	breadcrumbs := joinBreadcrumbs(postPageBreadcrumb(p)...)
+	joinBreadcrumbs(breadcrumb{}, breadcrumb{})
+
+	renderTemplate(s, w, pagePost, p.Title+" | note.comame.xyz", breadcrumbs, postPageData{
 		Post: *p,
 	})
 }
@@ -379,7 +381,7 @@ func postListPage(w http.ResponseWriter, r *http.Request, kvs *kvs) {
 		}
 	}
 
-	renderTemplate(s, w, pageAllPosts, "記事一覧", allPostsPageData{
+	renderTemplate(s, w, pageAllPosts, "記事一覧", joinBreadcrumbs(), allPostsPageData{
 		Posts: p,
 	})
 }

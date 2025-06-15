@@ -8,11 +8,6 @@ import (
 	"text/template"
 )
 
-type breadcrumb struct {
-	Label    string
-	Location string
-}
-
 type page string
 
 const (
@@ -53,17 +48,15 @@ func setupTemplate() *template.Template {
 	return t
 }
 
-func renderTemplate(s *session, w http.ResponseWriter, name page, title string, pageData any) {
+func renderTemplate(s *session, w http.ResponseWriter, name page, title string, breadcrumbs []breadcrumb, pageData any) {
 	t := setupTemplate()
 
 	props := pageProps{
-		IsLoggedIn: s.isLoggedIn(),
-		Breadcrumbs: []breadcrumb{
-			{Label: "Top", Location: "/"},
-		},
-		Title:    html.EscapeString(title),
-		Page:     name,
-		PageData: pageData,
+		IsLoggedIn:  s.isLoggedIn(),
+		Breadcrumbs: breadcrumbs,
+		Title:       html.EscapeString(title),
+		Page:        name,
+		PageData:    pageData,
 	}
 
 	pagePropsJSON, err := json.Marshal(props)
